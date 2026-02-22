@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "eido-backend"
+version = "0.1.0"
+description = "Backend service for EIDO autonomous startup factory"
+authors = ["EIDO Team <team@eido.example>"]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.101.1"
+uvicorn = {extras = ["standard"], version = "^0.23.2"}
+SQLModel = "^0.0.8"
+crewai = "^0.1.0"  # placeholder version
+# TODO: add toon, here.now, surge SDKs when available
+
+[tool.poetry.dev-dependencies]
+pytest = "^8.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
