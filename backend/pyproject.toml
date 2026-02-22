@@ -9,6 +9,8 @@ python = "^3.11"
 fastapi = "^0.101.1"
 uvicorn = {extras = ["standard"], version = "^0.23.2"}
 SQLModel = "^0.0.8"
+pydantic = "^2.0"
+python-dotenv = "^1.0.0"
 crewai = "^0.1.0"  # placeholder version
 # TODO: add toon, here.now, surge SDKs when available
 
