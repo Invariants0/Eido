@@ -1,0 +1,410 @@
+================================================================================
+EIDO BACKEND - IMPLEMENTATION INDEX & REMAINING WORK
+================================================================================
+Generated: 2026-02-23
+Current Production Readiness: 75%
+Target Production Readiness: 95%
+
+================================================================================
+PHASE 1: CRITICAL - LLM API INTEGRATION (BLOCKING)
+================================================================================
+Priority: P0 (Critical Path)
+Estimated Effort: 2-3 days
+Blocks: All AI execution
+
+Files to Modify:
+  - backend/app/services/ai_runtime/llm_router.py
+    * Replace _stub_llm_call() with real API calls
+    * Integrate OpenAI SDK
+    * Integrate Anthropic SDK
+    * Add proper error handling
+    * Add retry logic with exponential backoff
+
+Required Dependencies:
+  - openai>=1.0.0
+  - anthropic>=0.8.0
+
+Implementation Tasks:
+  [P0-1] Install OpenAI and Anthropic SDKs
+  [P0-2] Implement OpenAI client in llm_router.py
+  [P0-3] Implement Anthropic client in llm_router.py
+  [P0-4] Add model-specific token counting
+  [P0-5] Add streaming support (optional)
+  [P0-6] Test with real API keys
+  [P0-7] Validate cost tracking accuracy
+
+Environment Variables Needed:
+  - OPENAI_API_KEY (required)
+  - ANTHROPIC_API_KEY (required)
+
+================================================================================
+PHASE 2: CRITICAL - CREWAI INTEGRATION (BLOCKING)
+================================================================================
+Priority: P0 (Critical Path)
+Estimated Effort: 5-7 days
+Blocks: Autonomous execution
+
+Files to Modify:
+  - backend/app/services/ai_runtime/crewai_service.py
+    * Replace stub crew initialization
+    * Define actual agents per stage
+    * Define tasks per stage
+    * Implement crew execution
+    * Parse crew outputs
+
+Required Dependencies:
+  - crewai>=0.1.0 (update to latest stable)
+
+Implementation Tasks:
+  [P0-8] Define Ideation crew (business_analyst, market_researcher)
+  [P0-9] Define Architecture crew (system_architect, tech_lead)
+  [P0-10] Define Building crew (frontend_dev, backend_dev, qa_engineer)
+  [P0-11] Define Deployment crew (devops_engineer)
+  [P0-12] Define Tokenization crew (blockchain_specialist)
+  [P0-13] Implement crew.kickoff() execution
+  [P0-14] Parse and validate crew outputs
+  [P0-15] Test each crew independently
+
+Agent Definitions Needed:
+  - Business Analyst (ideation)
+  - Market Researcher (ideation)
+  - System Architect (architecture)
+  - Tech Lead (architecture)
+  - Frontend Developer (building)
+  - Backend Developer (building)
+  - QA Engineer (building)
+  - DevOps Engineer (deployment)
+  - Blockchain Specialist (tokenization)
+
+================================================================================
+PHASE 3: HIGH PRIORITY - OPENCLAW TOOL INTEGRATION
+================================================================================
+Priority: P1 (High)
+Estimated Effort: 3-4 days
+Blocks: Tool-based automation
+
+Files to Modify:
+  - backend/app/services/ai_runtime/openclaw_service.py
+    * Integrate actual OpenClaw tools
+    * Map tool names to implementations
+    * Add tool result parsing
+
+Implementation Tasks:
+  [P1-1] Research OpenClaw tool API
+  [P1-2] Implement file system tools
+  [P1-3] Implement command execution tools
+  [P1-4] Implement code generation tools
+  [P1-5] Test tool execution in sandbox
+  [P1-6] Validate security constraints
+
+Tools to Implement:
+  - read_file (file system)
+  - write_file (file system)
+  - execute_command (shell)
+  - list_directory (file system)
+  - generate_code (code generation)
+  - run_tests (testing)
+
+================================================================================
+PHASE 4: HIGH PRIORITY - EXTERNAL SERVICE INTEGRATIONS
+================================================================================
+Priority: P1 (High)
+Estimated Effort: 4-5 days
+Blocks: Deployment and tokenization
+
+Files to Modify:
+  - backend/app/integrations/surge.py
+  - backend/app/integrations/moltbook.py
+  - backend/app/integrations/deployment.py
+
+Implementation Tasks:
+  [P1-7] Implement Surge token creation
+  [P1-8] Implement Surge token deployment
+  [P1-9] Implement Moltbook integration
+  [P1-10] Implement deployment service (Vercel/Netlify)
+  [P1-11] Add integration error handling
+  [P1-12] Test with testnet/sandbox
+
+Required API Keys:
+  - SURGE_API_KEY
+  - MOLTBOOK_API_KEY
+  - HERENOW_API_KEY
+  - VERCEL_TOKEN or NETLIFY_TOKEN
+
+================================================================================
+PHASE 5: MEDIUM PRIORITY - AUTHENTICATION & AUTHORIZATION
+================================================================================
+Priority: P2 (Medium)
+Estimated Effort: 3-4 days
+Blocks: Production deployment
+
+New Files to Create:
+  - backend/app/auth/__init__.py
+  - backend/app/auth/jwt_handler.py
+  - backend/app/auth/dependencies.py
+  - backend/app/middleware/auth_middleware.py
+
+Implementation Tasks:
+  [P2-1] Implement JWT token generation
+  [P2-2] Implement JWT token validation
+  [P2-3] Add authentication middleware
+  [P2-4] Protect MVP endpoints
+  [P2-5] Add user model (optional)
+  [P2-6] Add API key authentication (alternative)
+
+Required Dependencies:
+  - python-jose[cryptography]>=3.3.0
+  - passlib[bcrypt]>=1.7.4
+
+================================================================================
+PHASE 6: MEDIUM PRIORITY - RATE LIMITING
+================================================================================
+Priority: P2 (Medium)
+Estimated Effort: 1-2 days
+Blocks: DoS protection
+
+New Files to Create:
+  - backend/app/middleware/rate_limiter.py
+
+Implementation Tasks:
+  [P2-7] Implement rate limiting middleware
+  [P2-8] Add Redis for distributed rate limiting
+  [P2-9] Configure per-endpoint limits
+  [P2-10] Add rate limit headers
+
+Required Dependencies:
+  - slowapi>=0.1.9
+  - redis>=5.0.0 (optional, for distributed)
+
+================================================================================
+PHASE 7: MEDIUM PRIORITY - METRICS & MONITORING
+================================================================================
+Priority: P2 (Medium)
+Estimated Effort: 2-3 days
+Blocks: Production observability
+
+New Files to Create:
+  - backend/app/monitoring/__init__.py
+  - backend/app/monitoring/metrics.py
+  - backend/app/monitoring/prometheus.py
+
+Implementation Tasks:
+  [P2-11] Add Prometheus metrics
+  [P2-12] Track request latency
+  [P2-13] Track error rates
+  [P2-14] Track cost metrics
+  [P2-15] Track token usage metrics
+  [P2-16] Add health check depth
+
+Required Dependencies:
+  - prometheus-client>=0.19.0
+  - prometheus-fastapi-instrumentator>=6.1.0
+
+Metrics to Track:
+  - mvp_pipeline_duration_seconds
+  - mvp_pipeline_cost_dollars
+  - mvp_pipeline_tokens_total
+  - mvp_stage_duration_seconds
+  - llm_requests_total
+  - llm_errors_total
+  - tool_invocations_total
+  - http_requests_total
+  - http_request_duration_seconds
+
+================================================================================
+PHASE 8: LOW PRIORITY - DISTRIBUTED LOCKING
+================================================================================
+Priority: P3 (Low)
+Estimated Effort: 2-3 days
+Blocks: Multi-instance deployment
+
+New Files to Create:
+  - backend/app/utils/distributed_lock.py
+
+Implementation Tasks:
+  [P3-1] Implement Redis-based locking
+  [P3-2] Add lock acquisition in pipeline start
+  [P3-3] Add lock release on completion
+  [P3-4] Add lock timeout handling
+  [P3-5] Test with multiple instances
+
+Required Dependencies:
+  - redis>=5.0.0
+  - redis-py-cluster>=2.1.0 (optional)
+
+================================================================================
+PHASE 9: LOW PRIORITY - CONTEXT COMPRESSION (TOON)
+================================================================================
+Priority: P3 (Low)
+Estimated Effort: 3-4 days
+Blocks: Large context optimization
+
+Files to Modify:
+  - backend/app/services/ai_runtime/context_manager.py
+    * Replace _compress_context() with Toon integration
+    * Add intelligent summarization
+    * Add semantic compression
+
+Implementation Tasks:
+  [P3-6] Research Toon API
+  [P3-7] Implement Toon client
+  [P3-8] Add semantic compression
+  [P3-9] Add context summarization
+  [P3-10] Test compression quality
+
+Required Dependencies:
+  - toon-sdk (if available)
+
+================================================================================
+PHASE 10: LOW PRIORITY - OPTIMIZATION & CACHING
+================================================================================
+Priority: P3 (Low)
+Estimated Effort: 2-3 days
+Blocks: Performance optimization
+
+New Files to Create:
+  - backend/app/cache/__init__.py
+  - backend/app/cache/redis_cache.py
+
+Implementation Tasks:
+  [P3-11] Add Redis caching layer
+  [P3-12] Cache LLM responses (with TTL)
+  [P3-13] Cache context builds
+  [P3-14] Add cache invalidation
+  [P3-15] Performance profiling
+
+Required Dependencies:
+  - redis>=5.0.0
+  - aiocache>=0.12.0
+
+================================================================================
+PHASE 11: TESTING & VALIDATION
+================================================================================
+Priority: Ongoing
+Estimated Effort: 5-7 days
+
+New Files to Create:
+  - backend/tests/__init__.py
+  - backend/tests/test_llm_router.py
+  - backend/tests/test_crewai_service.py
+  - backend/tests/test_tool_sandbox.py
+  - backend/tests/test_pipeline.py
+  - backend/tests/test_api.py
+  - backend/tests/integration/test_end_to_end.py
+
+Implementation Tasks:
+  [TEST-1] Unit tests for LLM router
+  [TEST-2] Unit tests for CrewAI service
+  [TEST-3] Unit tests for tool sandbox
+  [TEST-4] Unit tests for context manager
+  [TEST-5] Integration tests for pipeline
+  [TEST-6] API endpoint tests
+  [TEST-7] End-to-end pipeline tests
+  [TEST-8] Load testing
+  [TEST-9] Security testing
+
+Required Dependencies:
+  - pytest>=8.0.0
+  - pytest-asyncio>=0.23.0
+  - pytest-cov>=4.1.0
+  - httpx>=0.26.0
+
+================================================================================
+DEPENDENCY SUMMARY
+================================================================================
+
+Critical (P0):
+  - openai>=1.0.0
+  - anthropic>=0.8.0
+  - crewai>=0.1.0 (update)
+
+High Priority (P1):
+  - (OpenClaw SDK if available)
+
+Medium Priority (P2):
+  - python-jose[cryptography]>=3.3.0
+  - passlib[bcrypt]>=1.7.4
+  - slowapi>=0.1.9
+  - prometheus-client>=0.19.0
+  - prometheus-fastapi-instrumentator>=6.1.0
+
+Low Priority (P3):
+  - redis>=5.0.0
+  - aiocache>=0.12.0
+  - toon-sdk (if available)
+
+Testing:
+  - pytest>=8.0.0
+  - pytest-asyncio>=0.23.0
+  - pytest-cov>=4.1.0
+  - httpx>=0.26.0
+
+================================================================================
+ENVIRONMENT VARIABLES CHECKLIST
+================================================================================
+
+Critical:
+  [ ] OPENAI_API_KEY
+  [ ] ANTHROPIC_API_KEY
+
+High Priority:
+  [ ] SURGE_API_KEY
+  [ ] MOLTBOOK_API_KEY
+  [ ] HERENOW_API_KEY
+  [ ] VERCEL_TOKEN or NETLIFY_TOKEN
+
+Medium Priority:
+  [ ] JWT_SECRET_KEY
+  [ ] JWT_ALGORITHM (default: HS256)
+  [ ] REDIS_URL (for rate limiting/caching)
+
+Optional:
+  [ ] TOON_API_KEY
+  [ ] SENTRY_DSN (error tracking)
+  [ ] DATADOG_API_KEY (monitoring)
+
+================================================================================
+PRODUCTION READINESS ROADMAP
+================================================================================
+
+Current: 75%
+After Phase 1-2: 85% (LLM + CrewAI)
+After Phase 3-4: 90% (Tools + Integrations)
+After Phase 5-7: 95% (Auth + Rate Limit + Metrics)
+After Phase 8-10: 98% (Distributed + Optimization)
+After Phase 11: 100% (Full Testing)
+
+Minimum Viable Production: 85% (Phases 1-2 complete)
+Recommended Production: 95% (Phases 1-7 complete)
+
+================================================================================
+QUICK START GUIDE
+================================================================================
+
+1. Install Critical Dependencies:
+   cd backend
+   poetry add openai anthropic
+   poetry update crewai
+
+2. Set Environment Variables:
+   export OPENAI_API_KEY="sk-..."
+   export ANTHROPIC_API_KEY="sk-ant-..."
+
+3. Implement LLM Integration:
+   Edit: backend/app/services/ai_runtime/llm_router.py
+   Replace: _stub_llm_call() method
+
+4. Implement CrewAI Integration:
+   Edit: backend/app/services/ai_runtime/crewai_service.py
+   Replace: initialize_crew() and execute_crew() methods
+
+5. Test Pipeline:
+   python validate_ai_runtime.py
+   python -m pytest tests/
+
+6. Deploy:
+   uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+================================================================================
+END OF INDEX
+================================================================================

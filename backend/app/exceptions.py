@@ -52,3 +52,26 @@ class IntegrationError(EidoException):
 
     def __init__(self, service: str, message: str):
         super().__init__(f"{service} integration error: {message}", code="INTEGRATION_ERROR", status_code=502)
+
+
+class StateTransitionError(EidoException):
+    """Raised when an invalid state transition is attempted."""
+
+    def __init__(self, from_state: str, to_state: str):
+        message = f"Invalid state transition from {from_state} to {to_state}"
+        super().__init__(message, code="INVALID_STATE_TRANSITION", status_code=400)
+
+
+class PipelineConflictError(EidoException):
+    """Raised when attempting to start a pipeline that's already running."""
+
+    def __init__(self, mvp_id: int, current_state: str):
+        message = f"MVP {mvp_id} is already in progress (state: {current_state})"
+        super().__init__(message, code="PIPELINE_CONFLICT", status_code=409)
+
+
+class StageExecutionError(EidoException):
+    """Raised when a pipeline stage execution fails."""
+
+    def __init__(self, stage: str, message: str):
+        super().__init__(f"Stage '{stage}' execution failed: {message}", code="STAGE_EXECUTION_ERROR", status_code=500)
