@@ -43,7 +43,7 @@ export default function BrainPage() {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <main className="flex-1 md:ml-64 p-4 md:p-8 pb-24 md:pb-8">
+      <main className="flex-1 md:ml-[220px] p-4 md:p-8 pb-24 md:pb-8">
         <div className="max-w-4xl mx-auto space-y-8">
           <header className="mb-8 md:mb-12">
             <h1 className="text-4xl font-bold tracking-tight mb-2 flex items-center gap-3 text-white">
