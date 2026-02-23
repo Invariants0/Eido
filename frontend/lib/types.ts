@@ -150,3 +150,54 @@ export interface PortfolioEntry {
     value: number;
     change24h: number;
 }
+
+// -----------------------------------------
+// System Status Page Types
+// -----------------------------------------
+
+export type ServiceHealth = 'operational' | 'degraded' | 'down';
+
+export interface ServiceStatus {
+    name: string;
+    key: string;
+    health: ServiceHealth;
+    details: Record<string, string | number | boolean>;
+    lastChecked: string;
+}
+
+export interface SystemStatus {
+    overallHealth: ServiceHealth;
+    services: ServiceStatus[];
+    lastUpdated: string;
+}
+
+// -----------------------------------------
+// List Page Types
+// -----------------------------------------
+
+export interface MVPListItem {
+    id: string;
+    name: string;
+    tagline: string;
+    status: 'idea' | 'building' | 'failed' | 'deployed';
+    currentStage: LifecycleStageName;
+    tokenSymbol: string;
+    tokenStatus: 'minted' | 'pending' | 'none';
+    deploymentUrl?: string;
+    createdAt: string;
+}
+
+export interface TokenListItem {
+    id: string;
+    name: string;
+    symbol: string;
+    mvpId: string;
+    mvpName: string;
+    contractAddress: string;
+    totalSupply: number;
+    status: 'active' | 'minted' | 'failed';
+    price: number;
+    priceChange24h: number;
+    holders: number;
+    createdAt: string;
+}

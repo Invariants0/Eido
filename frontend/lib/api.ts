@@ -266,3 +266,238 @@ export async function getPortfolio(): Promise<PortfolioEntry[]> {
     console.log(`[api] getPortfolio()`);
     return MOCK_PORTFOLIO;
 }
+
+// ----------------------------------------
+// SYSTEM STATUS PAGE – MOCK DATA & API
+// ----------------------------------------
+
+import type { SystemStatus } from './types';
+
+const MOCK_SYSTEM_STATUS: SystemStatus = {
+    overallHealth: 'operational',
+    lastUpdated: '2026-02-24T01:40:00Z',
+    services: [
+        {
+            name: 'OpenClaw Runtime',
+            key: 'openclaw',
+            health: 'operational',
+            lastChecked: '2026-02-24T01:39:58Z',
+            details: {
+                status: 'Running',
+                version: 'v0.4.8-alpha',
+                uptime: '14h 23m',
+                region: 'us-east-1',
+                containers: 3,
+                memoryUsage: '2.1 GB / 8 GB',
+            },
+        },
+        {
+            name: 'LLM Provider',
+            key: 'llm',
+            health: 'operational',
+            lastChecked: '2026-02-24T01:39:55Z',
+            details: {
+                provider: 'OpenAI',
+                model: 'gpt-4o',
+                apiStatus: 'Connected',
+                latencyMs: 320,
+                tokensUsed: '48,200',
+                rateLimit: '10,000 TPM',
+            },
+        },
+        {
+            name: 'CrewAI Orchestrator',
+            key: 'crewai',
+            health: 'operational',
+            lastChecked: '2026-02-24T01:39:52Z',
+            details: {
+                activePipeline: 'eido-001',
+                currentJob: 'FeedbackAgent → Publish',
+                status: 'Running',
+                agentsLoaded: 7,
+                tasksCompleted: 21,
+                queueDepth: 0,
+            },
+        },
+        {
+            name: 'Docker Engine',
+            key: 'docker',
+            health: 'operational',
+            lastChecked: '2026-02-24T01:39:50Z',
+            details: {
+                connected: true,
+                version: '24.0.7',
+                lastBuild: '2026-02-24T00:04:00Z',
+                runningContainers: 2,
+                images: 5,
+                totalBuilds: 3,
+            },
+        },
+        {
+            name: 'SURGE Skill',
+            key: 'surge',
+            health: 'operational',
+            lastChecked: '2026-02-24T01:39:48Z',
+            details: {
+                walletStatus: 'Connected',
+                network: 'OpenClaw Testnet',
+                tokenCapability: 'Mint / Transfer / Burn',
+                tokensCreated: 1,
+                lastMint: '2026-02-24T00:01:26Z',
+                balance: '0.42 ETH (testnet)',
+            },
+        },
+        {
+            name: 'Moltbook Integration',
+            key: 'moltbook',
+            health: 'degraded',
+            lastChecked: '2026-02-24T01:39:45Z',
+            details: {
+                connected: true,
+                apiLatency: '1,240ms (elevated)',
+                lastPost: '2026-02-24T00:01:31Z',
+                postsToday: 1,
+                webhookStatus: 'Delayed',
+                rateLimitRemaining: '48/50',
+            },
+        },
+        {
+            name: 'Toon Optimizer',
+            key: 'toon',
+            health: 'operational',
+            lastChecked: '2026-02-24T01:39:42Z',
+            details: {
+                active: true,
+                lastCompression: 'Docker build logs → 3-line summary',
+                compressionRatio: '14x',
+                tokensSaved: 1840,
+                totalCompressions: 6,
+                avgRatio: '11.2x',
+            },
+        },
+    ],
+};
+
+export async function getSystemStatus(): Promise<SystemStatus> {
+    await delay(600);
+    console.log(`[api] getSystemStatus()`);
+    return MOCK_SYSTEM_STATUS;
+}
+
+// ----------------------------------------
+// LIST PAGE – MOCK DATA & API
+// ----------------------------------------
+
+import type { MVPListItem, TokenListItem } from './types';
+
+const MOCK_MVP_LIST: MVPListItem[] = [
+    {
+        id: 'eido-001',
+        name: 'ResumeAI',
+        tagline: 'ATS-aware resume builder for job seekers',
+        status: 'deployed',
+        currentStage: 'Publish',
+        tokenSymbol: 'RSMAI',
+        tokenStatus: 'minted',
+        deploymentUrl: 'https://resumeai.eido.here.now',
+        createdAt: '2026-02-24T00:00:00Z',
+    },
+    {
+        id: 'eido-002',
+        name: 'FitTrackAI',
+        tagline: 'AI-powered workout planner with wearable sync',
+        status: 'building',
+        currentStage: 'Build',
+        tokenSymbol: 'FTAI',
+        tokenStatus: 'pending',
+        createdAt: '2026-02-23T18:00:00Z',
+    },
+    {
+        id: 'eido-003',
+        name: 'CodexBot',
+        tagline: 'Autonomous code review agent for GitHub PRs',
+        status: 'deployed',
+        currentStage: 'Publish',
+        tokenSymbol: 'CDXB',
+        tokenStatus: 'minted',
+        deploymentUrl: 'https://codexbot.eido.here.now',
+        createdAt: '2026-02-22T12:30:00Z',
+    },
+    {
+        id: 'eido-004',
+        name: 'TaxHelper',
+        tagline: 'Automated freelancer tax estimation tool',
+        status: 'failed',
+        currentStage: 'Build',
+        tokenSymbol: '',
+        tokenStatus: 'none',
+        createdAt: '2026-02-21T09:15:00Z',
+    },
+    {
+        id: 'eido-005',
+        name: 'MealPlanr',
+        tagline: 'Personalized meal planning with macro tracking',
+        status: 'idea',
+        currentStage: 'Ideation',
+        tokenSymbol: '',
+        tokenStatus: 'none',
+        createdAt: '2026-02-24T01:00:00Z',
+    },
+];
+
+const MOCK_TOKEN_LIST: TokenListItem[] = [
+    {
+        id: 'surge-rsmai-001',
+        name: 'ResumeAI Token',
+        symbol: 'RSMAI',
+        mvpId: 'eido-001',
+        mvpName: 'ResumeAI',
+        contractAddress: '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
+        totalSupply: 1_000_000,
+        status: 'active',
+        price: 0.42,
+        priceChange24h: 12.5,
+        holders: 156,
+        createdAt: '2026-02-24T00:01:26Z',
+    },
+    {
+        id: 'surge-cdxb-003',
+        name: 'CodexBot Token',
+        symbol: 'CDXB',
+        mvpId: 'eido-003',
+        mvpName: 'CodexBot',
+        contractAddress: '0x9a8f2c6E4b3D1A7F5E0C8B9D2A6F4E1C3B7D5A0',
+        totalSupply: 500_000,
+        status: 'active',
+        price: 0.15,
+        priceChange24h: 8.1,
+        holders: 89,
+        createdAt: '2026-02-22T14:00:00Z',
+    },
+    {
+        id: 'surge-ftai-002',
+        name: 'FitTrackAI Token',
+        symbol: 'FTAI',
+        mvpId: 'eido-002',
+        mvpName: 'FitTrackAI',
+        contractAddress: '0x0000000000000000000000000000000000000000',
+        totalSupply: 750_000,
+        status: 'minted',
+        price: 0.00,
+        priceChange24h: 0,
+        holders: 0,
+        createdAt: '2026-02-23T19:30:00Z',
+    },
+];
+
+export async function getMVPList(): Promise<MVPListItem[]> {
+    await delay(500);
+    console.log(`[api] getMVPList()`);
+    return MOCK_MVP_LIST;
+}
+
+export async function getTokenList(): Promise<TokenListItem[]> {
+    await delay(400);
+    console.log(`[api] getTokenList()`);
+    return MOCK_TOKEN_LIST;
+}
