@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 
+
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
@@ -30,8 +31,9 @@ export default function RootLayout({
         {/* Immersive Background Layers */}
         <div className="fixed inset-0 z-[-1] bg-background" />
         <div className="fixed inset-0 z-[-1] hero-gradient" />
-        <div className="fixed inset-0 z-[-1] grid-bg pointer-events-none opacity-30" />
-        
+        <div className="fixed inset-0 z-[-1] grid-bg pointer-events-none opacity-20" />
+
+
         {/* Animated Decor Lines */}
         <div className="decor-lines">
           <div className="decor-line" />
