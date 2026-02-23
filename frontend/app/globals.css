@@ -1,26 +1,41 @@
 @import "tailwindcss";
 
+/* ==============================
+   DESIGN TOKENS
+============================== */
+
 :root {
-  --background: #050505;
+  --background: #0B0F19;
   --foreground: #ffffff;
-  --card: #0f0f0f;
+
+  --card: #111827;
   --card-foreground: #ffffff;
-  --popover: #0f0f0f;
-  --popover-foreground: #ffffff;
-  --primary: #FF5722; /* Vibrant Orange from image */
-  --primary-foreground: #ffffff;
-  --secondary: #1a1a1a;
-  --secondary-foreground: #a1a1aa;
-  --muted: #1a1a1a;
-  --muted-foreground: #737373;
-  --accent: #262626;
-  --accent-foreground: #ffffff;
-  --destructive: #991b1b;
-  --destructive-foreground: #ffffff;
-  --border: #262626;
-  --input: #262626;
-  --ring: #FF5722;
-  --radius: 1rem; /* Larger radius as seen in image */
+
+  --surface: #111827;
+
+  --border: #1f1f1f;
+
+  /* Text hierarchy */
+  --text-primary: #F9FAFB;
+  --text-secondary: #9CA3AF;
+  --text-muted: #4B5563;
+  --text-dim: #374151;
+
+  /* Landing Accent (keep orange) */
+  --primary: #FF5722;
+
+  /* Agent Accent (NEW - Cyan) */
+  --agent: #22D3EE;
+
+  /* Accent Blue */
+  --accent-blue: #3B82F6;
+
+  /* Success / Warning / Error */
+  --success: #10B981;
+  --warning: #F59E0B;
+  --error: #EF4444;
+
+  --radius: 1rem;
 }
 
 @theme {
@@ -28,98 +43,135 @@
   --font-mono: var(--font-jetbrains-mono);
 }
 
+/* ==============================
+   BASE
+============================== */
+
 body {
   background-color: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
 }
 
-/* Custom Utilities */
+/* ==============================
+   GLASS PANEL
+============================== */
+
 .glass-panel {
   background: rgba(20, 20, 20, 0.6);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  border-radius: var(--radius);
+  transition: all 200ms ease;
 }
 
 .glass-panel:hover {
-  background: rgba(30, 30, 30, 0.8);
-  border-color: rgba(255, 87, 34, 0.3);
-  box-shadow: 0 0 30px rgba(255, 87, 34, 0.1);
+  border-color: rgba(34, 211, 238, 0.3);
+  box-shadow: 0 0 25px rgba(34, 211, 238, 0.08);
 }
 
-.neon-border {
-  box-shadow: 0 0 0 1px rgba(255, 87, 34, 0.5);
-  border-color: var(--primary);
+/* ==============================
+   EXECUTION TERMINAL
+============================== */
+
+.terminal {
+  background: #000000;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  padding: 1rem;
+  max-height: 400px;
+  overflow-y: auto;
 }
 
-/* Immersive Background Grid */
-.grid-bg {
-  background-size: 40px 40px;
-  background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-  mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+/* Restore scrollbar ONLY for terminal */
+.terminal::-webkit-scrollbar {
+  width: 6px;
 }
 
-/* Hero Gradient Mesh */
+.terminal::-webkit-scrollbar-thumb {
+  background: #2a2a2a;
+  border-radius: 3px;
+}
+
+.log-info {
+  color: #9ca3af;
+}
+
+.log-success {
+  color: var(--success);
+}
+
+.log-warning {
+  color: var(--warning);
+}
+
+.log-error {
+  color: var(--error);
+}
+
+/* ==============================
+   STATUS BADGES
+============================== */
+
+.badge-agent {
+  background: rgba(34, 211, 238, 0.1);
+  color: var(--agent);
+  border: 1px solid rgba(34, 211, 238, 0.3);
+}
+
+.badge-success {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--success);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.badge-warning {
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--warning);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.badge-error {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--error);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* ==============================
+   AGENT GLOW EFFECT
+============================== */
+
+.glow-agent {
+  box-shadow: 0 0 20px rgba(34, 211, 238, 0.25);
+}
+
+/* ==============================
+   HERO (Landing Only)
+============================== */
+
 .hero-gradient {
-  background: radial-gradient(circle at 50% -20%, #FF5722 0%, rgba(255, 87, 34, 0.2) 30%, transparent 70%);
+  background: radial-gradient(circle at 50% -20%,
+      #FF5722 0%,
+      rgba(255, 87, 34, 0.2) 30%,
+      transparent 70%);
   position: fixed;
   inset: 0;
   z-index: -1;
   pointer-events: none;
 }
 
-/* Moving Decor Lines */
-.decor-lines {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  overflow: hidden;
+/* ==============================
+   UTILITY: HIDE SCROLLBAR
+============================== */
+
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
-.decor-line {
-  position: absolute;
-  background: linear-gradient(90deg, transparent, rgba(255, 87, 34, 0.3), transparent);
-  height: 1px;
-  width: 100%;
-  animation: moveLine 8s linear infinite;
-  opacity: 0;
-}
-
-.decor-line:nth-child(1) { top: 20%; animation-delay: 0s; animation-duration: 15s; }
-.decor-line:nth-child(2) { top: 40%; animation-delay: 5s; animation-duration: 12s; }
-.decor-line:nth-child(3) { top: 60%; animation-delay: 2s; animation-duration: 18s; }
-.decor-line:nth-child(4) { top: 80%; animation-delay: 8s; animation-duration: 20s; }
-
-.decor-line-vertical {
-  position: absolute;
-  background: linear-gradient(180deg, transparent, rgba(255, 87, 34, 0.3), transparent);
-  width: 1px;
-  height: 100%;
-  animation: moveLineVertical 8s linear infinite;
-  opacity: 0;
-}
-
-.decor-line-vertical:nth-child(5) { left: 20%; animation-delay: 1s; animation-duration: 10s; }
-.decor-line-vertical:nth-child(6) { left: 40%; animation-delay: 6s; animation-duration: 14s; }
-.decor-line-vertical:nth-child(7) { left: 60%; animation-delay: 3s; animation-duration: 16s; }
-.decor-line-vertical:nth-child(8) { left: 80%; animation-delay: 9s; animation-duration: 22s; }
-
-@keyframes moveLine {
-  0% { transform: translateX(-100%); opacity: 0; }
-  20% { opacity: 0.5; }
-  80% { opacity: 0.5; }
-  100% { transform: translateX(100%); opacity: 0; }
-}
-
-@keyframes moveLineVertical {
-  0% { transform: translateY(-100%); opacity: 0; }
-  20% { opacity: 0.5; }
-  80% { opacity: 0.5; }
-  100% { transform: translateY(100%); opacity: 0; }
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
