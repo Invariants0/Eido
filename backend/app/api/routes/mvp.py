@@ -1,7 +1,3 @@
-from fastapi import APIRouter
+"""MVP routes - delegates to controller."""
 
-router = APIRouter()
-
-@router.get("/list", tags=["mvp"])
-def list_mvps():
-    return {"mvps": []}
+from ..controllers.mvp_controller import router
