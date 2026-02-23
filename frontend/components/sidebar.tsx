@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   LayoutDashboard, Activity, Zap, Settings, Cpu,
-  ChevronLeft, ChevronRight, Menu, X, Rocket
+  ChevronLeft, ChevronRight, Menu, X, Rocket, Server
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useState, useEffect } from 'react';
@@ -14,7 +14,8 @@ const navItems = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Brain', href: '/brain', icon: Activity },
   { name: 'MVPs', href: '/mvp', icon: Rocket },
-  { name: 'Tokens', href: '/tokens', icon: Zap },
+  { name: 'Tokens', href: '/token', icon: Zap },
+  { name: 'System', href: '/system', icon: Server },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
@@ -82,7 +83,7 @@ export function Sidebar() {
           {!collapsed && (
             <button
               onClick={toggleCollapsed}
-              className="w-6 h-6 rounded-md flex items-center justify-center text-[#4B5563] hover:text-white hover:bg-white/[0.06] transition-colors shrink-0"
+              className="w-6 h-6 rounded-md flex items-center justify-center text-[var(--text-muted)] hover:text-white hover:bg-white/[0.06] transition-colors shrink-0"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
@@ -93,7 +94,7 @@ export function Sidebar() {
         {collapsed && (
           <button
             onClick={toggleCollapsed}
-            className="mx-auto mt-2 w-8 h-7 rounded-md flex items-center justify-center text-[#4B5563] hover:text-white hover:bg-white/[0.06] transition-colors"
+            className="mx-auto mt-2 w-8 h-7 rounded-md flex items-center justify-center text-[var(--text-muted)] hover:text-white hover:bg-white/[0.06] transition-colors"
           >
             <ChevronRight className="w-4 h-4" />
           </button>
@@ -111,7 +112,7 @@ export function Sidebar() {
                 className={clsx(
                   'flex items-center rounded-xl text-sm font-medium transition-all relative group',
                   collapsed ? 'justify-center w-10 h-10 mx-auto' : 'gap-3 px-3 py-2.5',
-                  isActive ? 'text-white' : 'text-[#4B5563] hover:text-white'
+                  isActive ? 'text-white' : 'text-[var(--text-muted)] hover:text-white'
                 )}
               >
                 {isActive && (
@@ -144,7 +145,7 @@ export function Sidebar() {
 
                 {/* Tooltip for collapsed */}
                 {collapsed && (
-                  <div className="absolute left-full ml-3 px-2 py-1 bg-[#111827] rounded-md border border-white/10 text-xs text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-lg">
+                  <div className="absolute left-full ml-3 px-2 py-1 bg-[var(--surface)] rounded-md border border-white/10 text-xs text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-lg">
                     {item.name}
                   </div>
                 )}
@@ -156,17 +157,17 @@ export function Sidebar() {
         {/* Footer Status */}
         <div className={clsx('p-3 border-t border-white/[0.05] shrink-0', collapsed && 'flex justify-center')}>
           {collapsed ? (
-            <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)] animate-pulse" title="System Online" />
+            <div className="w-2 h-2 rounded-full bg-[var(--success)] shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse" title="System Online" />
           ) : (
             <div className="rounded-xl px-3 py-2.5 border border-white/[0.06] bg-white/[0.03] relative overflow-hidden group">
               <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="flex items-center gap-2 mb-0.5 relative z-10">
-                <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)] animate-pulse" />
-                <span className="text-[10px] font-mono text-[#4B5563] uppercase tracking-widest group-hover:text-[#9CA3AF] transition-colors">
+                <div className="w-2 h-2 rounded-full bg-[var(--success)] shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse" />
+                <span className="text-[10px] font-mono text-[var(--text-muted)] uppercase tracking-widest group-hover:text-[var(--text-secondary)] transition-colors">
                   Online
                 </span>
               </div>
-              <div className="text-[10px] text-[#374151] font-mono relative z-10 pl-4">
+              <div className="text-[10px] text-[var(--text-dim)] font-mono relative z-10 pl-4">
                 v2.4.0-alpha
               </div>
             </div>
@@ -211,7 +212,7 @@ export function Sidebar() {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-              className="md:hidden fixed top-0 left-0 bottom-0 z-[70] w-64 bg-[#0B0F19] border-r border-white/[0.08] flex flex-col"
+              className="md:hidden fixed top-0 left-0 bottom-0 z-[70] w-64 bg-[var(--background)] border-r border-white/[0.08] flex flex-col"
             >
               {/* Mobile Header */}
               <div className="h-14 px-4 flex items-center justify-between border-b border-white/[0.05]">
@@ -223,7 +224,7 @@ export function Sidebar() {
                 </Link>
                 <button
                   onClick={() => setMobileOpen(false)}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-[#4B5563] hover:text-white hover:bg-white/[0.06] transition-colors"
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-[var(--text-muted)] hover:text-white hover:bg-white/[0.06] transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -239,7 +240,7 @@ export function Sidebar() {
                       href={item.href}
                       className={clsx(
                         'flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all',
-                        isActive ? 'bg-white/[0.07] text-white border border-white/[0.06]' : 'text-[#4B5563] hover:text-white hover:bg-white/[0.04]'
+                        isActive ? 'bg-white/[0.07] text-white border border-white/[0.06]' : 'text-[var(--text-muted)] hover:text-white hover:bg-white/[0.04]'
                       )}
                     >
                       <item.icon className={clsx('w-4 h-4', isActive ? 'text-primary' : '')} />
@@ -252,8 +253,8 @@ export function Sidebar() {
               {/* Mobile Footer */}
               <div className="p-3 border-t border-white/[0.05]">
                 <div className="flex items-center gap-2 px-3 py-2">
-                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.8)]" />
-                  <span className="text-[10px] font-mono text-[#4B5563] uppercase tracking-widest">System Online · v2.4.0</span>
+                  <div className="w-2 h-2 rounded-full bg-[var(--success)] animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+                  <span className="text-[10px] font-mono text-[var(--text-muted)] uppercase tracking-widest">System Online · v2.4.0</span>
                 </div>
               </div>
             </motion.div>
@@ -272,7 +273,7 @@ export function Sidebar() {
                 href={item.href}
                 className={clsx(
                   'flex flex-col items-center justify-center p-2 rounded-xl transition-all relative gap-1',
-                  isActive ? 'text-primary' : 'text-[#374151]'
+                  isActive ? 'text-primary' : 'text-[var(--text-dim)]'
                 )}
               >
                 {isActive && (
