@@ -37,6 +37,36 @@ class Config:
     MAX_AGENT_RETRIES = int(os.getenv("MAX_AGENT_RETRIES", "3"))
     AGENT_TIMEOUT_SECONDS = int(os.getenv("AGENT_TIMEOUT_SECONDS", "300"))
     
+    # AI Runtime Settings
+    MAX_STAGE_RETRIES = int(os.getenv("MAX_STAGE_RETRIES", "2"))
+    MAX_LLM_RETRIES = int(os.getenv("MAX_LLM_RETRIES", "3"))
+    MAX_TOOL_INVOCATIONS = int(os.getenv("MAX_TOOL_INVOCATIONS", "50"))
+    MAX_TOTAL_RUNTIME = int(os.getenv("MAX_TOTAL_RUNTIME", "3600"))  # seconds
+    MAX_TOTAL_COST = float(os.getenv("MAX_TOTAL_COST", "10.0"))  # USD
+    
+    # LLM Configuration
+    DEFAULT_LLM_MODEL = os.getenv("DEFAULT_LLM_MODEL", "gpt-4")
+    IDEATION_LLM_MODEL = os.getenv("IDEATION_LLM_MODEL", "gpt-4")
+    ARCHITECTURE_LLM_MODEL = os.getenv("ARCHITECTURE_LLM_MODEL", "gpt-4")
+    BUILDING_LLM_MODEL = os.getenv("BUILDING_LLM_MODEL", "gpt-4")
+    DEPLOYMENT_LLM_MODEL = os.getenv("DEPLOYMENT_LLM_MODEL", "gpt-3.5-turbo")
+    TOKENIZATION_LLM_MODEL = os.getenv("TOKENIZATION_LLM_MODEL", "gpt-3.5-turbo")
+    SUMMARY_LLM_MODEL = os.getenv("SUMMARY_LLM_MODEL", "gpt-3.5-turbo")
+    
+    # LLM API Keys
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+    ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+    
+    # Context Management
+    MAX_CONTEXT_TOKENS = int(os.getenv("MAX_CONTEXT_TOKENS", "8000"))
+    MAX_PROMPT_SIZE = int(os.getenv("MAX_PROMPT_SIZE", "16000"))
+    
+    # Tool Sandbox Settings
+    ALLOWED_TOOL_PATHS = os.getenv("ALLOWED_TOOL_PATHS", "/tmp/eido,./workspace").split(",")
+    MAX_FILE_SIZE_MB = int(os.getenv("MAX_FILE_SIZE_MB", "10"))
+    TOOL_EXECUTION_TIMEOUT = int(os.getenv("TOOL_EXECUTION_TIMEOUT", "30"))
+    ALLOWED_COMMANDS = os.getenv("ALLOWED_COMMANDS", "ls,cat,echo,mkdir,touch").split(",")
+    
     @classmethod
     def validate(cls) -> None:
         """Validate critical configuration."""
