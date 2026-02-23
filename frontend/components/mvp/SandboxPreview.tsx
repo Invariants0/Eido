@@ -138,10 +138,10 @@ export function SandboxPreview({ url, status, mvpName }: SandboxPreviewProps) {
     const showMockup = status === 'running'; // show demo content when deployed
 
     return (
-        <div className="flex flex-col h-full bg-[#0B0F19]">
+        <div className="flex flex-col h-full bg-[var(--background)]">
 
             {/* ── Browser Chrome ─────────────────────────────────────────────── */}
-            <div className="h-11 flex items-center gap-2 px-4 border-b border-white/[0.06] bg-[#111827] shrink-0">
+            <div className="h-11 flex items-center gap-2 px-4 border-b border-white/[0.06] bg-[var(--surface)] shrink-0">
                 {/* Traffic Lights */}
                 <div className="flex gap-1.5 shrink-0">
                     <div className="w-3 h-3 rounded-full bg-red-500/60 hover:bg-red-500 transition-colors cursor-pointer" />
@@ -158,12 +158,12 @@ export function SandboxPreview({ url, status, mvpName }: SandboxPreviewProps) {
                     {status === 'running' ? (
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(16,185,129,0.8)] shrink-0 animate-pulse" />
                     ) : status === 'building' ? (
-                        <Loader2 className="w-3 h-3 text-[#22D3EE] animate-spin shrink-0" />
+                        <Loader2 className="w-3 h-3 text-[var(--accent-blue)] animate-spin shrink-0" />
                     ) : (
-                        <AlertTriangle className="w-3 h-3 text-[#EF4444] shrink-0" />
+                        <AlertTriangle className="w-3 h-3 text-[var(--error)] shrink-0" />
                     )}
-                    <span className="text-xs font-mono text-[#9CA3AF] truncate flex-1 select-all">{url}</span>
-                    <span className="shrink-0 text-[#4B5563] group-hover:text-white transition-colors">
+                    <span className="text-xs font-mono text-[var(--text-secondary)] truncate flex-1 select-all">{url}</span>
+                    <span className="shrink-0 text-[var(--text-muted)] group-hover:text-white transition-colors">
                         {urlCopied ? <CheckCircle className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
                     </span>
                 </div>
@@ -171,20 +171,20 @@ export function SandboxPreview({ url, status, mvpName }: SandboxPreviewProps) {
                 {/* Controls */}
                 <div className="flex items-center gap-1 shrink-0">
                     <div className="flex items-center gap-0.5 bg-black/30 border border-white/[0.06] rounded-md p-0.5">
-                        <button onClick={() => setDevice('desktop')} className={`p-1.5 rounded transition-colors ${device === 'desktop' ? 'bg-white/10 text-white' : 'text-[#4B5563] hover:text-white'}`}>
+                        <button onClick={() => setDevice('desktop')} className={`p-1.5 rounded transition-colors ${device === 'desktop' ? 'bg-white/10 text-white' : 'text-[var(--text-muted)] hover:text-white'}`}>
                             <Monitor className="w-3.5 h-3.5" />
                         </button>
-                        <button onClick={() => setDevice('mobile')} className={`p-1.5 rounded transition-colors ${device === 'mobile' ? 'bg-white/10 text-white' : 'text-[#4B5563] hover:text-white'}`}>
+                        <button onClick={() => setDevice('mobile')} className={`p-1.5 rounded transition-colors ${device === 'mobile' ? 'bg-white/10 text-white' : 'text-[var(--text-muted)] hover:text-white'}`}>
                             <Smartphone className="w-3.5 h-3.5" />
                         </button>
                     </div>
-                    <button onClick={handleRefresh} className="p-1.5 rounded-md text-[#4B5563] hover:text-white hover:bg-white/[0.06] transition-colors" title="Reload">
+                    <button onClick={handleRefresh} className="p-1.5 rounded-md text-[var(--text-muted)] hover:text-white hover:bg-white/[0.06] transition-colors" title="Reload">
                         <RefreshCw className="w-3.5 h-3.5" />
                     </button>
-                    <a href={url} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-md text-[#4B5563] hover:text-white hover:bg-white/[0.06] transition-colors" title="Open">
+                    <a href={url} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-md text-[var(--text-muted)] hover:text-white hover:bg-white/[0.06] transition-colors" title="Open">
                         <ExternalLink className="w-3.5 h-3.5" />
                     </a>
-                    <button className="p-1.5 rounded-md text-[#4B5563] hover:text-white hover:bg-white/[0.06] transition-colors" title="Fullscreen">
+                    <button className="p-1.5 rounded-md text-[var(--text-muted)] hover:text-white hover:bg-white/[0.06] transition-colors" title="Fullscreen">
                         <Maximize2 className="w-3.5 h-3.5" />
                     </button>
                 </div>
@@ -197,18 +197,18 @@ export function SandboxPreview({ url, status, mvpName }: SandboxPreviewProps) {
                 <AnimatePresence>
                     {status === 'building' && (
                         <motion.div key="building" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                            className="absolute inset-0 z-20 bg-[#0B0F19] flex flex-col items-center justify-center gap-6">
+                            className="absolute inset-0 z-20 bg-[var(--background)] flex flex-col items-center justify-center gap-6">
                             <div className="relative">
-                                <div className="w-20 h-20 rounded-full border-2 border-[#22D3EE]/20 border-t-[#22D3EE] animate-spin" />
+                                <div className="w-20 h-20 rounded-full border-2 border-[var(--accent-blue)]/20 border-t-[var(--accent-blue)] animate-spin" />
                                 <div className="absolute inset-0 flex items-center justify-center text-2xl">🏗</div>
                             </div>
                             <div className="text-center">
                                 <p className="text-base font-semibold text-white mb-1">Building {mvpName}</p>
-                                <p className="text-xs text-[#9CA3AF] font-mono">docker build -t {mvpName.toLowerCase().replace(' ', '-')}:latest .</p>
+                                <p className="text-xs text-[var(--text-secondary)] font-mono">docker build -t {mvpName.toLowerCase().replace(' ', '-')}:latest .</p>
                             </div>
                             <div className="flex gap-1.5">
                                 {[0, 1, 2].map(i => (
-                                    <div key={i} className="w-2 h-2 rounded-full bg-[#22D3EE]"
+                                    <div key={i} className="w-2 h-2 rounded-full bg-[var(--accent-blue)]"
                                         style={{ animation: `pulse 1.4s ease-in-out ${i * 0.25}s infinite alternate` }} />
                                 ))}
                             </div>
@@ -217,13 +217,13 @@ export function SandboxPreview({ url, status, mvpName }: SandboxPreviewProps) {
 
                     {status === 'failed' && (
                         <motion.div key="failed" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                            className="absolute inset-0 z-20 bg-[#0B0F19] flex flex-col items-center justify-center gap-4">
+                            className="absolute inset-0 z-20 bg-[var(--background)] flex flex-col items-center justify-center gap-4">
                             <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center">
-                                <AlertTriangle className="w-7 h-7 text-[#EF4444]" />
+                                <AlertTriangle className="w-7 h-7 text-[var(--error)]" />
                             </div>
                             <div className="text-center">
-                                <p className="text-sm font-semibold text-[#EF4444] mb-1">Deployment Failed</p>
-                                <p className="text-xs text-[#9CA3AF] font-mono">Switch to Console tab for error details</p>
+                                <p className="text-sm font-semibold text-[var(--error)] mb-1">Deployment Failed</p>
+                                <p className="text-xs text-[var(--text-secondary)] font-mono">Switch to Console tab for error details</p>
                             </div>
                         </motion.div>
                     )}
@@ -244,7 +244,7 @@ export function SandboxPreview({ url, status, mvpName }: SandboxPreviewProps) {
                             <>
                                 {!iframeLoaded && !iframeError && (
                                     <div className="absolute inset-0 flex items-center justify-center bg-[#0D1117] z-10">
-                                        <Loader2 className="w-6 h-6 text-[#22D3EE] animate-spin" />
+                                        <Loader2 className="w-6 h-6 text-[var(--accent-blue)] animate-spin" />
                                     </div>
                                 )}
                                 <iframe
