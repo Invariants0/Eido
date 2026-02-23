@@ -19,7 +19,7 @@ export default function Home() {
               </div>
             </div>
           </header>
-          
+
           <DashboardContent />
         </div>
       </main>
