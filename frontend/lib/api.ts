@@ -82,6 +82,35 @@ const MOCK_MVP: MVP = {
                 reactions: 0,
             },
         },
+        ideationDiscovery: {
+            marketAnalysis: {
+                tam: '$2.4B Global Recruitment Market',
+                competitors: ['Canva', 'Teal', 'Jobscan'],
+                swot: {
+                    strength: 'Fully autonomous tailoring',
+                    weakness: 'Cold start for domain niches',
+                    opportunity: 'Direct integration with SURGE payroll',
+                    threat: 'LLM context window costs'
+                }
+            },
+            userInterrogations: [
+                {
+                    persona: 'Recent Graduate',
+                    critique: 'I need it to handle my lack of experience without sounding fake.',
+                    confidenceScore: 92
+                },
+                {
+                    persona: 'Technical Recruiter',
+                    critique: 'Make sure it doesn\'t include irrelevant buzzword-stuffing.',
+                    confidenceScore: 88
+                }
+            ],
+            brandingConcepts: {
+                colors: ['#22D3EE', '#0B0F19', '#F59E0B'],
+                fontVibe: 'Clean, Geometric Sans + JetBrains Mono',
+                logoDescription: 'A stylized "R" formed by converging circuit traces.'
+            }
+        }
     },
     deployment: {
         url: 'https://resumeai.eido.here.now',
@@ -500,4 +529,167 @@ export async function getTokenList(): Promise<TokenListItem[]> {
     await delay(400);
     console.log(`[api] getTokenList()`);
     return MOCK_TOKEN_LIST;
+}
+
+// ----------------------------------------
+// AGENT BRAIN PAGE – MOCK DATA & API
+// ----------------------------------------
+
+import type { AgentTimelineItem, AgentMemory, ReflectionNote } from './types';
+
+const MOCK_AGENT_TIMELINE: AgentTimelineItem[] = [
+    {
+        id: 't-1',
+        stageName: 'Ideation',
+        agentName: 'IdeationAgent',
+        reasoningSummary: 'Evaluated 12 ideas. Selected "ATS-aware resume builder" for feasibility.',
+        timestamp: '2026-02-24T00:01:00Z',
+        status: 'success',
+        details: 'High search volume on HN, direct monetization path. Competitors are manual or expensive.',
+    },
+    {
+        id: 't-2',
+        stageName: 'Architecture',
+        agentName: 'ArchitectureAgent',
+        reasoningSummary: 'Chose Vite+React + FastAPI. Optimized for fast AI streaming.',
+        timestamp: '2026-02-24T00:02:00Z',
+        status: 'success',
+        details: 'Decoupled frontend for Vercel deployment, Dockerized backend for OpenClaw.',
+    },
+    {
+        id: 't-3',
+        stageName: 'Build',
+        agentName: 'BuilderAgent',
+        reasoningSummary: 'Failed to build due to missing pip dependency.',
+        timestamp: '2026-02-24T00:04:00Z',
+        status: 'failed',
+        details: 'ModuleNotFoundError: No module named \'multipart\'. Attempting reflection.',
+    },
+    {
+        id: 't-4',
+        stageName: 'Reflection',
+        agentName: 'ReflectionLoop',
+        reasoningSummary: 'Identified missing package. Added python-multipart to requirements.',
+        timestamp: '2026-02-24T00:05:30Z',
+        status: 'retry',
+        details: 'Deterministic fix: Base template updated for all future FastAPI builds.',
+    },
+    {
+        id: 't-5',
+        stageName: 'Deploy',
+        agentName: 'DeploymentAgent',
+        reasoningSummary: 'Container deployed successfully on here.now.',
+        timestamp: '2026-02-24T00:07:00Z',
+        status: 'success',
+        details: 'Health check passed. Container cnt_resumeai_8f2d running.',
+    },
+    {
+        id: 't-6',
+        stageName: 'Token',
+        agentName: 'TokenAgent',
+        reasoningSummary: 'Minted RSMAI token on SURGE testnet.',
+        timestamp: '2026-02-24T00:07:30Z',
+        status: 'success',
+        details: 'Supply: 1M. Allocated 20% to Treasury, 62% Public.',
+    }
+];
+
+const MOCK_AGENT_MEMORY: AgentMemory = {
+    currentObjective: 'Orchestrate pipeline for ResumeAI MVP',
+    stage: 'Publish',
+    retryCount: 1,
+    contextCompression: {
+        originalTokens: 14250,
+        compressedTokens: 850,
+        reason: 'Toon compression triggered after build failure log exceeded window threshold.',
+    },
+    lastAgentOutput: {
+        action: 'create_contract',
+        network: 'surge-testnet',
+        parameters: {
+            name: 'ResumeAI Token',
+            symbol: 'RSMAI',
+            supply: 1000000
+        },
+        transactionHash: '0xabc123def456abc789def012abc345def678',
+        verification_status: 'confirmed'
+    }
+};
+
+const MOCK_REFLECTION_NOTES: ReflectionNote[] = [
+    {
+        id: 'r-1',
+        errorExplanation: 'Docker build failed at `pip install -r requirements.txt`. Missing `python-multipart` required by FastAPI for file uploads.',
+        correctionApplied: 'Added `python-multipart>=0.0.6` to `requirements.txt` and restarted container build task.',
+        deterministicFix: 'Updated global architecture template `fastapi-base` to include `python-multipart` by default.',
+    }
+];
+
+export async function getAgentTimeline(): Promise<AgentTimelineItem[]> {
+    await delay(400);
+    return MOCK_AGENT_TIMELINE;
+}
+
+export async function getAgentMemory(): Promise<AgentMemory> {
+    await delay(350);
+    return MOCK_AGENT_MEMORY;
+}
+
+export async function getReflectionNotes(): Promise<ReflectionNote[]> {
+    await delay(300);
+    return MOCK_REFLECTION_NOTES;
+}
+
+// ----------------------------------------
+// DASHBOARD PAGE – MOCK DATA & API
+// ----------------------------------------
+
+import type { DashboardSummary, ActivityLog } from './types';
+
+export async function getDashboardSummary(): Promise<DashboardSummary> {
+    await delay(300);
+    return {
+        totalMvps: 5,
+        activeBuilds: 1,
+        deployedMvps: 2,
+        tokensCreated: 2,
+    };
+}
+
+const MOCK_ACTIVITY: ActivityLog[] = [
+    {
+        id: 'act-1',
+        message: 'FeedbackAgent posted ResumeAI progress to Moltbook.',
+        timestamp: '2026-02-24T00:01:31Z',
+        type: 'system'
+    },
+    {
+        id: 'act-2',
+        message: 'TokenAgent successfully minted $RSMAI on SURGE testnet.',
+        timestamp: '2026-02-24T00:01:26Z',
+        type: 'token'
+    },
+    {
+        id: 'act-3',
+        message: 'DeploymentAgent successfully deployed cnt_resumeai_8f2d.',
+        timestamp: '2026-02-24T00:01:21Z',
+        type: 'deploy'
+    },
+    {
+        id: 'act-4',
+        message: 'BuilderAgent encountered pip dependency error. Reflection triggered.',
+        timestamp: '2026-02-24T00:00:46Z',
+        type: 'error'
+    },
+    {
+        id: 'act-5',
+        message: 'BuilderAgent started project scaffold for FitTrackAI.',
+        timestamp: '2026-02-23T18:05:12Z',
+        type: 'build'
+    }
+];
+
+export async function getRecentActivity(): Promise<ActivityLog[]> {
+    await delay(450);
+    return MOCK_ACTIVITY;
 }
