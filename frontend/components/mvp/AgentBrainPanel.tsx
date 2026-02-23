@@ -105,6 +105,84 @@ export function AgentBrainPanel({ reasoning }: AgentBrainPanelProps) {
                         </pre>
                     </div>
                 </Section>
+
+                {/* Ideation Discovery (New Betterment) */}
+                {reasoning.ideationDiscovery && (
+                    <Section title="Ideation Discovery (Market Proof)" icon={Layers} defaultOpen={false}>
+                        <div className="space-y-4">
+                            {/* Market Depth */}
+                            <div>
+                                <h4 className="text-[10px] uppercase tracking-wider text-[#22D3EE] font-mono mb-2">Market Intelligence</h4>
+                                <div className="p-3 bg-black/40 rounded-lg border border-[#22D3EE]/10 space-y-2">
+                                    <div className="flex justify-between text-[11px]">
+                                        <span className="text-[#4B5563]">TAM</span>
+                                        <span className="text-white font-mono">{reasoning.ideationDiscovery.marketAnalysis.tam}</span>
+                                    </div>
+                                    <div className="flex justify-between text-[11px]">
+                                        <span className="text-[#4B5563]">Competitors</span>
+                                        <div className="flex gap-1.5">
+                                            {reasoning.ideationDiscovery.marketAnalysis.competitors.map(c => (
+                                                <span key={c} className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.04] text-white">{c}</span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-white/[0.05]">
+                                        <div className="text-[10px]">
+                                            <span className="text-emerald-400 block mb-0.5">S: {reasoning.ideationDiscovery.marketAnalysis.swot.strength}</span>
+                                            <span className="text-[#3B82F6] block">O: {reasoning.ideationDiscovery.marketAnalysis.swot.opportunity}</span>
+                                        </div>
+                                        <div className="text-[10px]">
+                                            <span className="text-amber-400 block mb-0.5">W: {reasoning.ideationDiscovery.marketAnalysis.swot.weakness}</span>
+                                            <span className="text-red-400 block">T: {reasoning.ideationDiscovery.marketAnalysis.swot.threat}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* User Interrogations */}
+                            <div>
+                                <h4 className="text-[10px] uppercase tracking-wider text-[#3B82F6] font-mono mb-2">Persona Interrogations</h4>
+                                <div className="space-y-2">
+                                    {reasoning.ideationDiscovery.userInterrogations.map((ui, idx) => (
+                                        <div key={idx} className="p-2.5 bg-black/20 rounded-lg border border-white/[0.04]">
+                                            <div className="flex justify-between items-center mb-1">
+                                                <span className="text-[11px] font-semibold text-white">{ui.persona}</span>
+                                                <span className="text-[10px] font-mono text-emerald-400">{ui.confidenceScore}% Confidence</span>
+                                            </div>
+                                            <p className="text-[11px] text-[#9CA3AF] italic">"{ui.critique}"</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Branding concepts */}
+                            <div>
+                                <h4 className="text-[10px] uppercase tracking-wider text-purple-400 font-mono mb-2">Autonomous Branding</h4>
+                                <div className="p-3 bg-black/40 rounded-lg border border-purple-400/10">
+                                    <div className="flex gap-2 mb-2">
+                                        {reasoning.ideationDiscovery.brandingConcepts.colors.map(col => (
+                                            <div key={col} className="w-5 h-5 rounded-md border border-white/10" style={{ backgroundColor: col }} title={col} />
+                                        ))}
+                                    </div>
+                                    <div className="text-[11px] text-white font-mono mb-1">{reasoning.ideationDiscovery.brandingConcepts.fontVibe}</div>
+                                    <p className="text-[10px] text-[#4B5563] italic">{reasoning.ideationDiscovery.brandingConcepts.logoDescription}</p>
+                                </div>
+                            </div>
+
+                            {/* Momentum Scores */}
+                            <div className="grid grid-cols-2 gap-3 pt-2">
+                                <div className="p-3 rounded-lg bg-[var(--agent)]/10 border border-[var(--agent)]/20 text-center">
+                                    <div className="text-[10px] uppercase text-[var(--agent)] font-mono mb-1">Market TAM</div>
+                                    <div className="text-lg font-bold text-white">High</div>
+                                </div>
+                                <div className="p-3 rounded-lg bg-[var(--success)]/10 border border-[var(--success)]/20 text-center">
+                                    <div className="text-[10px] uppercase text-[var(--success)] font-mono mb-1">Viral Potential</div>
+                                    <div className="text-lg font-bold text-white">8.4/10</div>
+                                </div>
+                            </div>
+                        </div>
+                    </Section>
+                )}
             </div>
         </div>
     );

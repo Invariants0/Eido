@@ -12,7 +12,7 @@ import { useState, useEffect } from 'react';
 
 const navItems = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Brain', href: '/brain', icon: Activity },
+  { name: 'Brain', href: '/agent', icon: Activity },
   { name: 'MVPs', href: '/mvp', icon: Rocket },
   { name: 'Tokens', href: '/token', icon: Zap },
   { name: 'System', href: '/system', icon: Server },
