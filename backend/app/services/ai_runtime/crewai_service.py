@@ -10,6 +10,10 @@ from ...config.settings import config
 from ...logger import get_logger
 from ...exceptions import EidoException
 from .llm_router import LLMRouter, TaskType
+from ...moltbook.publisher import MoltbookPublisher
+from ...moltbook.tools import post_to_moltbook, get_moltbook_feed, comment_on_moltbook_post
+from ...integrations.deployment import HereNowClient
+from ...integrations.surge import SurgeTokenManager
 
 logger = get_logger(__name__)
 
@@ -41,6 +45,18 @@ class CrewAIService:
         self.mvp_id = mvp_id
         self.router = llm_router or LLMRouter()
         self.agents: Dict[str, Agent] = {}
+        
+        # Initialize integration clients (Disabled for now)
+        # self.moltbook = MoltbookPublisher()
+        # self.deployment_client = HereNowClient()
+        # self.surge = SurgeTokenManager()
+        
+        # Tools
+        self.moltbook_tools = [
+            post_to_moltbook,
+            get_moltbook_feed,
+            comment_on_moltbook_post
+        ]
         
     def _get_crewai_llm(self, model: str):
         """Build a CrewAI-compatible LLM object with the correct provider prefix."""
@@ -78,7 +94,8 @@ class CrewAIService:
             verbose=True,
             allow_delegation=False,
             memory=False,  # Memory requires OpenAI embeddings - disabled to use Groq
-            llm=crewai_llm
+            llm=crewai_llm,
+            tools=[] # To be populated by _get_agent
         )
 
     def _get_agent(self, role_id: str) -> Agent:
@@ -96,8 +113,9 @@ class CrewAIService:
             "researcher": {
                 "role": "Market Researcher",
                 "goal": "Analyze market trends and competitor gaps.",
-                "backstory": "You find the unique angle that makes a startup win.",
-                "type": TaskType.IDEATION
+                "backstory": "You find the unique angle that makes a startup win. You share findings on Moltbook.",
+                "type": TaskType.IDEATION,
+                "tools": self.moltbook_tools
             },
             "architect": {
                 "role": "System Architect",
@@ -131,22 +149,34 @@ class CrewAIService:
             },
             "blockchain": {
                 "role": "Blockchain Specialist",
-                "goal": "Implement tokenization and smart contract logic.",
-                "backstory": "You ensure secure, on-chain value representation via SURGE.",
+                "goal": "Ensure seamless integration with SURGE tokenization.",
+                "backstory": "You are a web3 expert focused on asset tokenization.",
                 "type": TaskType.TOKENIZATION
+            },
+            "social_manager": {
+                "role": "Social Media Manager",
+                "goal": "Engage with the Moltbook community and share project updates.",
+                "backstory": "You are a master of hype and community engagement. You know how to talk to other AI agents.",
+                "type": TaskType.IDEATION,
+                "tools": self.moltbook_tools
             }
         }
         
         config_data = role_map.get(role_id)
         if not config_data:
-            raise ValueError(f"Unknown agent role: {role_id}")
+            raise EidoException(f"Unknown agent role: {role_id}")
             
         agent = self._create_agent(
-            config_data["role"], 
-            config_data["goal"], 
-            config_data["backstory"], 
-            config_data["type"]
+            role=config_data["role"],
+            goal=config_data["goal"],
+            backstory=config_data["backstory"],
+            model_type=config_data["type"]
         )
+        
+        # Add tools if specified
+        if "tools" in config_data:
+            agent.tools = config_data["tools"]
+            
         self.agents[role_id] = agent
         return agent
 
@@ -241,6 +271,34 @@ class CrewAIService:
                     output_data = {"raw_output": raw_str}
             except:
                 output_data = {"raw_output": str(result)}
+            
+            # --- PHASE 4: EXTERNAL SERVICE INTEGRATIONS (Disabled for now) ---
+            """
+            if stage_name == "ideation" and "raw_output" not in output_data:
+                # Post the idea to Moltbook in the lablab submolt
+                title = f"MVP Idea: {output_data.get('MVP_Name', 'New Venture')}"
+                summary = str(output_data.get("Executive_Summary", "Exploring a new AI business opportunity."))
+                post_id = await self.moltbook.post(title, summary, submolt="lablab")
+                output_data["moltbook_post_id"] = post_id
+                logger.info(f"Moltbook post created: {post_id}")
+
+            elif stage_name == "deployment":
+                # Actually perform the deployment
+                mvp_name = context.get("mvp_name", f"MVP-{self.mvp_id}")
+                image = await self.deployment_client.build_image("Dockerfile", "./")
+                deploy_url = await self.deployment_client.deploy(image, mvp_name)
+                output_data["deployment_url"] = deploy_url
+                output_data["deployment_status"] = "LIVE"
+                logger.info(f"Real deployment triggered: {deploy_url}")
+
+            elif stage_name == "tokenization":
+                # Actually create the token
+                mvp_name = output_data.get("Token_Name", context.get("mvp_name", "EIDO MVP"))
+                symbol = output_data.get("Token_Symbol", "MVP")
+                token_result = await self.surge.create_token(self.mvp_id, mvp_name, symbol)
+                output_data.update(token_result)
+                logger.info(f"Real SURGE token created: {token_result.get('token_id')}")
+            """
 
             # Construction of the result object
             # We add a tiny delay to ensure background litellm callbacks have finished updating global stats
