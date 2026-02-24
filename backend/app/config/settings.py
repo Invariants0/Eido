@@ -46,17 +46,22 @@ class Config:
     MAX_TOTAL_COST = float(os.getenv("MAX_TOTAL_COST", "10.0"))  # USD
     
     # LLM Configuration
-    DEFAULT_LLM_MODEL = os.getenv("DEFAULT_LLM_MODEL", "gpt-4")
-    IDEATION_LLM_MODEL = os.getenv("IDEATION_LLM_MODEL", "gpt-4")
-    ARCHITECTURE_LLM_MODEL = os.getenv("ARCHITECTURE_LLM_MODEL", "gpt-4")
-    BUILDING_LLM_MODEL = os.getenv("BUILDING_LLM_MODEL", "gpt-4")
-    DEPLOYMENT_LLM_MODEL = os.getenv("DEPLOYMENT_LLM_MODEL", "gpt-3.5-turbo")
-    TOKENIZATION_LLM_MODEL = os.getenv("TOKENIZATION_LLM_MODEL", "gpt-3.5-turbo")
-    SUMMARY_LLM_MODEL = os.getenv("SUMMARY_LLM_MODEL", "gpt-3.5-turbo")
+    DEFAULT_LLM_MODEL = os.getenv("DEFAULT_LLM_MODEL", "llama-3.3-70b-versatile")
+    IDEATION_LLM_MODEL = os.getenv("IDEATION_LLM_MODEL", "llama-3.3-70b-versatile")
+    ARCHITECTURE_LLM_MODEL = os.getenv("ARCHITECTURE_LLM_MODEL", "llama-3.3-70b-versatile")
+    BUILDING_LLM_MODEL = os.getenv("BUILDING_LLM_MODEL", "llama-3.3-70b-versatile")
+    DEPLOYMENT_LLM_MODEL = os.getenv("DEPLOYMENT_LLM_MODEL", "llama-3.3-70b-versatile")
+    TOKENIZATION_LLM_MODEL = os.getenv("TOKENIZATION_LLM_MODEL", "llama-3.3-70b-versatile")
+    SUMMARY_LLM_MODEL = os.getenv("SUMMARY_LLM_MODEL", "llama-3.3-70b-versatile")
     
     # LLM API Keys
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+    OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL")  # For local LLMs or proxies
+    
     ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+    
+    GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
     
     # Context Management
     MAX_CONTEXT_TOKENS = int(os.getenv("MAX_CONTEXT_TOKENS", "8000"))
