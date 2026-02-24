@@ -10,7 +10,7 @@ from ..models.mvp import MVP, MVPState, is_valid_transition, is_terminal_state
 from ..models.agent_run import AgentRun
 from ..db import get_session_context
 from ..config.settings import config
-from ..logging import get_logger
+from ..logger import get_logger
 from ..exceptions import StateTransitionError, NotFoundError, EidoException
 from .ai_runtime import AIRuntimeFacade
 
@@ -277,7 +277,7 @@ async def resume_incomplete_pipelines() -> None:
         incomplete_mvps = session.exec(statement).all()
         
         if not incomplete_mvps:
-            logger.info("No incomplete pipelines found")
+            logger.success("No incomplete pipelines found")
             return
         
         logger.info(f"Found {len(incomplete_mvps)} incomplete pipelines, resuming...")

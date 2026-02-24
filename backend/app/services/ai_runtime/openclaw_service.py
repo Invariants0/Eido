@@ -2,7 +2,7 @@
 
 from typing import Dict, Any, List, Optional
 
-from ...logging import get_logger
+from ...logger import get_logger
 from .tool_sandbox import SafeToolExecutor, ToolSandboxError
 
 logger = get_logger(__name__)

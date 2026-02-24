@@ -1,11 +1,11 @@
-"""LLM Client implementations for OpenAI and Anthropic."""
+"""LLM Clients - provider-specific implementations (OpenAI, Anthropic)."""
 
 import asyncio
-from typing import Optional, Dict, Any
 from abc import ABC, abstractmethod
+from typing import Dict, Any, Optional
 
 from ...config.settings import config
-from ...logging import get_logger
+from ...logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -14,13 +14,13 @@ class LLMClient(ABC):
     """Abstract base class for LLM clients."""
     
     @abstractmethod
-    async def complete(self, prompt: str, model: str, max_tokens: int = 2000) -> Dict[str, Any]:
-        """Execute completion and return response with usage stats."""
+    async def complete(self, prompt: str, model: str, **kwargs) -> Dict[str, Any]:
+        """Execute text completion/chat."""
         pass
 
 
 class OpenAIClient(LLMClient):
-    """OpenAI API client."""
+    """Client for OpenAI models."""
     
     def __init__(self):
         self.api_key = config.OPENAI_API_KEY
@@ -35,65 +35,49 @@ class OpenAIClient(LLMClient):
             except ImportError:
                 logger.warning("openai package not installed, using stub mode")
                 self.stub_mode = True
-    
-    async def complete(self, prompt: str, model: str, max_tokens: int = 2000) -> Dict[str, Any]:
-        """Execute OpenAI completion."""
+
+    async def complete(self, prompt: str, model: str, **kwargs) -> Dict[str, Any]:
         if self.stub_mode:
-            return await self._stub_complete(prompt, model)
+            return await self._stub_response(prompt, model)
         
         try:
             response = await self.client.chat.completions.create(
                 model=model,
-                messages=[
-                    {"role": "system", "content": "You are a helpful AI assistant."},
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=max_tokens,
-                temperature=0.7,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=kwargs.get("temperature", 0.7),
+                max_tokens=kwargs.get("max_tokens", 2000),
             )
             
             return {
                 "content": response.choices[0].message.content,
                 "input_tokens": response.usage.prompt_tokens,
                 "output_tokens": response.usage.completion_tokens,
-                "total_tokens": response.usage.total_tokens,
-                "model": response.model,
+                "model": model
             }
-        
         except Exception as e:
-            logger.error(f"OpenAI API error: {e}")
+            logger.error(f"OpenAI API Error: {e}")
             raise
-    
-    async def _stub_complete(self, prompt: str, model: str) -> Dict[str, Any]:
-        """Stub completion for testing without API key."""
-        await asyncio.sleep(0.1)  # Simulate API latency
-        
-        stub_response = {
-            "status": "success",
-            "model": model,
-            "result": f"Stub response from {model}",
-            "analysis": "This is a stubbed OpenAI response for testing",
-            "recommendations": ["Implement actual OpenAI integration", "Add API key to environment"],
-        }
-        
-        import json
-        content = json.dumps(stub_response, indent=2)
-        
-        # Estimate tokens
-        input_tokens = len(prompt.split()) * 1.3
-        output_tokens = len(content.split()) * 1.3
-        
+
+    async def _stub_response(self, prompt: str, model: str) -> Dict[str, Any]:
+        """Return a mock JSON response for development."""
+        await asyncio.sleep(0.5)
+        # Check for keywords to return appropriate mock JSON
+        content = '{"status": "success", "message": "Stubbed response"}'
+        if "ideation" in prompt.lower():
+            content = '{"idea": "AI SaaS for Hackathons", "score": 9.2, "feasibility": "High"}'
+        elif "architecture" in prompt.lower():
+            content = '{"stack": "Next.js, FastAPI, SQLite", "components": ["Auth", "API", "DB"]}'
+            
         return {
             "content": content,
-            "input_tokens": int(input_tokens),
-            "output_tokens": int(output_tokens),
-            "total_tokens": int(input_tokens + output_tokens),
-            "model": model,
+            "input_tokens": len(prompt.split()) * 1.3,
+            "output_tokens": 50,
+            "model": f"{model}-stub"
         }
 
 
 class AnthropicClient(LLMClient):
-    """Anthropic API client."""
+    """Client for Anthropic models."""
     
     def __init__(self):
         self.api_key = config.ANTHROPIC_API_KEY
@@ -108,66 +92,42 @@ class AnthropicClient(LLMClient):
             except ImportError:
                 logger.warning("anthropic package not installed, using stub mode")
                 self.stub_mode = True
-    
-    async def complete(self, prompt: str, model: str, max_tokens: int = 2000) -> Dict[str, Any]:
-        """Execute Anthropic completion."""
+
+    async def complete(self, prompt: str, model: str, **kwargs) -> Dict[str, Any]:
         if self.stub_mode:
-            return await self._stub_complete(prompt, model)
+            return await self._stub_response(prompt, model)
         
         try:
             response = await self.client.messages.create(
                 model=model,
-                max_tokens=max_tokens,
-                messages=[
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.7,
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=kwargs.get("max_tokens", 2000),
+                temperature=kwargs.get("temperature", 0.7),
             )
             
-            content = response.content[0].text
-            
             return {
-                "content": content,
+                "content": response.content[0].text,
                 "input_tokens": response.usage.input_tokens,
                 "output_tokens": response.usage.output_tokens,
-                "total_tokens": response.usage.input_tokens + response.usage.output_tokens,
-                "model": response.model,
+                "model": model
             }
-        
         except Exception as e:
-            logger.error(f"Anthropic API error: {e}")
+            logger.error(f"Anthropic API Error: {e}")
             raise
-    
-    async def _stub_complete(self, prompt: str, model: str) -> Dict[str, Any]:
-        """Stub completion for testing without API key."""
-        await asyncio.sleep(0.1)  # Simulate API latency
-        
-        stub_response = {
-            "status": "success",
-            "model": model,
-            "result": f"Stub response from {model}",
-            "analysis": "This is a stubbed Anthropic response for testing",
-            "recommendations": ["Implement actual Anthropic integration", "Add API key to environment"],
-        }
-        
-        import json
-        content = json.dumps(stub_response, indent=2)
-        
-        # Estimate tokens
-        input_tokens = len(prompt.split()) * 1.3
-        output_tokens = len(content.split()) * 1.3
-        
+
+    async def _stub_response(self, prompt: str, model: str) -> Dict[str, Any]:
+        """Return a mock JSON response for development."""
+        await asyncio.sleep(0.5)
         return {
-            "content": content,
-            "input_tokens": int(input_tokens),
-            "output_tokens": int(output_tokens),
-            "total_tokens": int(input_tokens + output_tokens),
-            "model": model,
+            "content": '{"status": "success", "message": "Stubbed Anthropic response"}',
+            "input_tokens": len(prompt.split()) * 1.3,
+            "output_tokens": 50,
+            "model": f"{model}-stub"
         }
 
 
 def get_llm_client(model: str) -> LLMClient:
-    """Get appropriate LLM client for model."""
+    """Factory function to get appropriate LLM client."""
     if "gpt" in model.lower():
         return OpenAIClient()
     elif "claude" in model.lower():

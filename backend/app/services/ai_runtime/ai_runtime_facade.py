@@ -3,7 +3,7 @@
 from typing import Dict, Any
 from datetime import datetime
 
-from ...logging import get_logger
+from ...logger import get_logger
 from ...models.mvp import MVP
 from ...db import get_session_context
 from .llm_router import LLMRouter

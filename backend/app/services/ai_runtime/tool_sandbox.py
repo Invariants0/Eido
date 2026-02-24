@@ -7,7 +7,7 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 
 from ...config.settings import config
-from ...logging import get_logger
+from ...logger import get_logger
 from ...exceptions import EidoException
 
 logger = get_logger(__name__)

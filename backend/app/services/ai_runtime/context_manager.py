@@ -4,7 +4,7 @@ from typing import Dict, Any, List, Optional
 from pathlib import Path
 
 from ...config.settings import config
-from ...logging import get_logger
+from ...logger import get_logger
 from ...models.mvp import MVP
 
 logger = get_logger(__name__)
