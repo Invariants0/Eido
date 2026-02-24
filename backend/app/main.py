@@ -3,8 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from .config.settings import config
 from .db import init_db
-from .logging import configure_logging, get_logger
+from .logger import configure_logging, get_logger
 from .api.middleware.error_handler import register_exception_handlers
+from .api.middleware.request_logging import RequestLoggingMiddleware
 from .api.routes import health, mvp
 from .services.pipeline import resume_incomplete_pipelines
 
@@ -23,10 +24,12 @@ async def lifespan(app: FastAPI):
     # Crash recovery: resume incomplete pipelines
     await resume_incomplete_pipelines()
     
+    logger.success("EIDO backend is fully initialized and ready")
+    
     yield
     
     # Shutdown
-    logger.info("Shutting down EIDO backend")
+    logger.warning("Shutting down EIDO backend")
 
 
 # Initialize FastAPI app
@@ -46,6 +49,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Custom logging middleware (tracks request timing)
+app.add_middleware(RequestLoggingMiddleware)
+
 # Register exception handlers
 register_exception_handlers(app)
 
@@ -53,11 +59,11 @@ register_exception_handlers(app)
 app.include_router(health.router, tags=["health"])
 app.include_router(mvp.router, prefix="/api/mvp", tags=["mvp"])
 
-# Include other routers
-from .api.routes import agent_routes, token_routes, deploy_routes
-app.include_router(agent_routes.router, prefix="/api/agent", tags=["agent"])
-app.include_router(token_routes.router, prefix="/api/token", tags=["token"])
-app.include_router(deploy_routes.router, prefix="/api/deploy", tags=["deploy"])
+# Include other routers as they are defined
+# from .api.routes import agent_routes, token_routes, deploy_routes
+# app.include_router(agent_routes.router, prefix="/api/agent", tags=["agent"])
+# app.include_router(token_routes.router, prefix="/api/token", tags=["token"])
+# app.include_router(deploy_routes.router, prefix="/api/deploy", tags=["deploy"])
 
 @app.get("/")
 def root():
