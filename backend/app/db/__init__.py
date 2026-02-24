@@ -4,14 +4,14 @@ from sqlmodel import SQLModel, create_engine, Session
 from contextlib import contextmanager
 from typing import Generator
 from ..config.settings import config
-from ..logging import get_logger
+from ..logger import get_logger
 
 logger = get_logger(__name__)
 
 # Create engine with connection pooling
 engine = create_engine(
     config.DATABASE_URL,
-    echo=config.DEBUG,
+    echo=False,  # We manage logging via app.logging, not engine echo
     connect_args={"check_same_thread": False} if "sqlite" in config.DATABASE_URL else {},
 )
 
@@ -22,7 +22,7 @@ def init_db() -> None:
     
     logger.info("Initializing database tables")
     SQLModel.metadata.create_all(engine)
-    logger.info("Database tables initialized successfully")
+    logger.success("Database tables initialized successfully")
 
 
 def get_session() -> Generator[Session, None, None]:
