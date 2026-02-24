@@ -22,12 +22,17 @@ async def test_crew():
         # This will test the initialization, agent factory, and structure
         result = await service.execute_crew(stage_name="ideation", context=context)
         
-        print("\n--- Execution Result ---")
+        # Wait a moment for CrewAI's rich terminal output to finish
+        await asyncio.sleep(1)
+        
+        print("\n" + "="*50)
+        print("--- FINAL EXECUTION RESULT ---")
         print(f"Status: SUCCESS")
         print(f"Model: {result.model_used}")
         print(f"Tokens: {result.token_usage}")
         print(f"Cost: ${result.cost_estimate}")
         print(f"Output Preview: {str(result.output_json)[:100]}...")
+        print("="*50)
         
     except Exception as e:
         print(f"\nExecution result: {e}")
