@@ -10,8 +10,6 @@ from ...config.settings import config
 from ...logger import get_logger
 from ...exceptions import EidoException
 from .llm_router import LLMRouter, TaskType
-from ...moltbook.publisher import MoltbookPublisher
-from ...moltbook.tools import post_to_moltbook, get_moltbook_feed, comment_on_moltbook_post
 from ...integrations.deployment import HereNowClient
 from ...integrations.surge import SurgeTokenManager
 
@@ -52,11 +50,7 @@ class CrewAIService:
         # self.surge = SurgeTokenManager()
         
         # Tools
-        self.moltbook_tools = [
-            post_to_moltbook,
-            get_moltbook_feed,
-            comment_on_moltbook_post
-        ]
+        self.moltbook_tools = []
         
     def _get_crewai_llm(self, model: str):
         """Build a CrewAI-compatible LLM object with the correct provider prefix."""
