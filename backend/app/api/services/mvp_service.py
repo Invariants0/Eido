@@ -7,7 +7,7 @@ from sqlmodel import Session, select
 from ...models.mvp import MVP, MVPState, is_valid_transition, is_non_terminal_state, is_terminal_state
 from ...models.agent_run import AgentRun
 from ...exceptions import NotFoundError, ValidationError, StateTransitionError, PipelineConflictError
-from ...logging import get_logger
+from ...logger import get_logger
 
 logger = get_logger(__name__)
 

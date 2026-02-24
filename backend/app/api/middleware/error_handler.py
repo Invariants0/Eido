@@ -3,7 +3,7 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from ...exceptions import EidoException
-from ...logging import get_logger
+from ...logger import get_logger
 import uuid
 
 logger = get_logger(__name__)

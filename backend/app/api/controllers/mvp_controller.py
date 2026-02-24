@@ -8,7 +8,7 @@ from ...db import get_session
 from ..services.mvp_service import MVPService
 from ..schemas.mvp import MVPCreate, MVPResponse, MVPListResponse
 from ...services.pipeline import AutonomousPipeline
-from ...logging import get_logger
+from ...logger import get_logger
 
 logger = get_logger(__name__)
 router = APIRouter()
