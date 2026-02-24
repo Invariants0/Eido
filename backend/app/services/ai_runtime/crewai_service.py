@@ -42,9 +42,27 @@ class CrewAIService:
         self.router = llm_router or LLMRouter()
         self.agents: Dict[str, Agent] = {}
         
+    def _get_crewai_llm(self, model: str):
+        """Build a CrewAI-compatible LLM object with the correct provider prefix."""
+        from crewai import LLM
+        model_lower = model.lower()
+        
+        # litellm requires provider-prefixed model names
+        if "llama" in model_lower or "mixtral" in model_lower or "gemma" in model_lower:
+            # Route to Groq via litellm
+            return LLM(model=f"groq/{model}", api_key=config.GROQ_API_KEY)
+        elif "gemini" in model_lower:
+            return LLM(model=f"gemini/{model}", api_key=config.GEMINI_API_KEY)
+        elif "claude" in model_lower:
+            return LLM(model=model, api_key=config.ANTHROPIC_API_KEY)
+        else:
+            # GPT models - use OpenAI
+            return LLM(model=model, api_key=config.OPENAI_API_KEY)
+
     def _create_agent(self, role: str, goal: str, backstory: str, model_type: TaskType) -> Agent:
         """Create a CrewAI agent using EIDO's routed LLM."""
         model = self.router.get_model_for_task(model_type)
+        crewai_llm = self._get_crewai_llm(model)
         
         return Agent(
             role=role,
@@ -52,8 +70,8 @@ class CrewAIService:
             backstory=backstory,
             verbose=True,
             allow_delegation=False,
-            memory=True,
-            llm=model
+            memory=False,  # Memory requires OpenAI embeddings - disabled to use Groq
+            llm=crewai_llm
         )
 
     def _get_agent(self, role_id: str) -> Agent:
@@ -185,10 +203,16 @@ class CrewAIService:
             tasks=tasks,
             process=Process.sequential,
             verbose=True,
-            memory=True
+            memory=False  # Memory requires OpenAI embeddings - disabled to use Groq
         )
         
         try:
+            # Silence litellm internal proxy warnings at runtime
+            import logging as _logging
+            for _name in ["LiteLLM", "litellm", "litellm.litellm_core_utils", 
+                          "litellm.proxy", "httpx", "httpcore"]:
+                _logging.getLogger(_name).setLevel(_logging.CRITICAL)
+            
             # Wrap synchronous kickoff in a thread to keep the event loop responsive
             result = await asyncio.to_thread(crew.kickoff)
             
