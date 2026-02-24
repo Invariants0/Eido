@@ -53,11 +53,11 @@ register_exception_handlers(app)
 app.include_router(health.router, tags=["health"])
 app.include_router(mvp.router, prefix="/api/mvp", tags=["mvp"])
 
-# Include other routers as they are defined
-# from .api.routes import agent_routes, token_routes, deploy_routes
-# app.include_router(agent_routes.router, prefix="/api/agent", tags=["agent"])
-# app.include_router(token_routes.router, prefix="/api/token", tags=["token"])
-# app.include_router(deploy_routes.router, prefix="/api/deploy", tags=["deploy"])
+# Include other routers
+from .api.routes import agent_routes, token_routes, deploy_routes
+app.include_router(agent_routes.router, prefix="/api/agent", tags=["agent"])
+app.include_router(token_routes.router, prefix="/api/token", tags=["token"])
+app.include_router(deploy_routes.router, prefix="/api/deploy", tags=["deploy"])
 
 @app.get("/")
 def root():
