@@ -48,7 +48,14 @@ class CrewAIService:
         model_lower = model.lower()
         
         # litellm requires provider-prefixed model names
-        if "llama" in model_lower or "mixtral" in model_lower or "gemma" in model_lower:
+        
+        # Ollama (local) — already prefixed as 'ollama/modelname'
+        if model_lower.startswith("ollama/") or model_lower.startswith("ollama_"):
+            return LLM(
+                model=f"ollama/{model.replace('ollama/', '')}", 
+                base_url=config.OLLAMA_BASE_URL
+            )
+        elif "llama" in model_lower or "mixtral" in model_lower or "gemma" in model_lower:
             # Route to Groq via litellm
             return LLM(model=f"groq/{model}", api_key=config.GROQ_API_KEY)
         elif "gemini" in model_lower:

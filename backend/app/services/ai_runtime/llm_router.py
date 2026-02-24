@@ -49,20 +49,27 @@ class LLMRouter:
     
     # Token cost per 1K tokens (USD) - updated pricing
     MODEL_COSTS = {
+        # OpenAI (Paid)
         "gpt-4": {"input": 0.03, "output": 0.06},
         "gpt-4-turbo": {"input": 0.01, "output": 0.03},
         "gpt-4o": {"input": 0.005, "output": 0.015},
         "gpt-4o-mini": {"input": 0.00015, "output": 0.0006},
         "gpt-3.5-turbo": {"input": 0.0005, "output": 0.0015},
+        # Anthropic (Paid)
         "claude-3-opus": {"input": 0.015, "output": 0.075},
         "claude-3-sonnet-20240229": {"input": 0.003, "output": 0.015},
         "claude-3-haiku-20240307": {"input": 0.00025, "output": 0.00125},
+        # Groq (Free Tier)
+        "llama-3.3-70b-versatile": {"input": 0.0, "output": 0.0},
         "llama3-70b": {"input": 0.0007, "output": 0.0009},
         "llama3-8b": {"input": 0.0001, "output": 0.0001},
         "llama-3.1-70b": {"input": 0.0006, "output": 0.0006},
+        # Gemini (Free Tier)
         "gemini-1.5-flash": {"input": 0.0, "output": 0.0},
         "gemini-1.5-pro": {"input": 0.0, "output": 0.0},
         "gemini-2.0-flash": {"input": 0.0, "output": 0.0},
+        # Ollama (Local - Free)
+        "ollama": {"input": 0.0, "output": 0.0},
     }
     
     def __init__(self):

@@ -232,9 +232,64 @@ class GeminiClient(LLMClient):
         }
 
 
+class OllamaClient(LLMClient):
+    """Client for Ollama local models (OpenAI-compatible API)."""
+    
+    def __init__(self):
+        self.base_url = config.OLLAMA_BASE_URL
+        self.stub_mode = False
+        try:
+            import openai
+            self.client = openai.AsyncOpenAI(
+                api_key="ollama",  # Ollama doesn't need a real key
+                base_url=self.base_url
+            )
+        except ImportError:
+            logger.warning("openai package not installed (needed for Ollama), using stub mode")
+            self.stub_mode = True
+
+    async def complete(self, prompt: str, model: str, **kwargs) -> Dict[str, Any]:
+        if self.stub_mode:
+            return await self._stub_response(prompt, model)
+        
+        # Strip 'ollama/' prefix if present (e.g., 'ollama/llama3' -> 'llama3')
+        clean_model = model.replace("ollama/", "") if model.startswith("ollama/") else model
+        
+        try:
+            response = await self.client.chat.completions.create(
+                model=clean_model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=kwargs.get("temperature", 0.7),
+                max_tokens=kwargs.get("max_tokens", 2000),
+            )
+            
+            return {
+                "content": response.choices[0].message.content,
+                "input_tokens": response.usage.prompt_tokens if response.usage else 0,
+                "output_tokens": response.usage.completion_tokens if response.usage else 0,
+                "model": model
+            }
+        except Exception as e:
+            logger.error(f"Ollama API Error: {e}")
+            raise
+
+    async def _stub_response(self, prompt: str, model: str) -> Dict[str, Any]:
+        await asyncio.sleep(0.5)
+        return {
+            "content": '{"status": "success", "message": "Stubbed Ollama response"}',
+            "input_tokens": len(prompt.split()) * 1.3,
+            "output_tokens": 50,
+            "model": f"{model}-stub"
+        }
+
+
 def get_llm_client(model: str) -> LLMClient:
     """Factory function to get appropriate LLM client."""
     model_lower = model.lower()
+    
+    # Check for Ollama (local) models — prefix 'ollama/' in model name
+    if model_lower.startswith("ollama/") or model_lower.startswith("ollama_"):
+        return OllamaClient()
     
     # Check for Gemini specific model names
     if "gemini" in model_lower:
