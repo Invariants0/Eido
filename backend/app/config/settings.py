@@ -63,6 +63,9 @@ class Config:
     GROQ_API_KEY = os.getenv("GROQ_API_KEY")
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
     
+    # Ollama (Local LLM) — no API key needed, just the URL
+    OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1")
+    
     # Context Management
     MAX_CONTEXT_TOKENS = int(os.getenv("MAX_CONTEXT_TOKENS", "8000"))
     MAX_PROMPT_SIZE = int(os.getenv("MAX_PROMPT_SIZE", "16000"))
