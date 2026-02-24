@@ -12,6 +12,7 @@ class Config:
     """Base configuration."""
     
     # App
+    ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
     DEBUG = os.getenv("DEBUG", "false").lower() == "true"
     APP_NAME = "EIDO Backend"
     APP_VERSION = "0.1.0"
@@ -98,8 +99,7 @@ class ProductionConfig(Config):
 
 
 # Select config based on environment
-ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
-if ENVIRONMENT == "production":
+if Config.ENVIRONMENT == "production":
     config = ProductionConfig()
 else:
     config = DevelopmentConfig()
