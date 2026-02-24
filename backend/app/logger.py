@@ -5,6 +5,15 @@ import sys
 from loguru import logger
 from .config.settings import config
 
+# Suppress litellm's internal verbose logging before anything loads
+try:
+    import litellm
+    litellm.suppress_debug_info = True
+    litellm.set_verbose = False
+    litellm.json_logs = False
+except ImportError:
+    pass
+
 class InterceptHandler(logging.Handler):
     """
     Intercepts standard logging messages and redirects them to Loguru.
@@ -88,6 +97,16 @@ def configure_logging(log_level: str = "INFO") -> None:
     
     logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
     logging.getLogger("watchfiles").setLevel(logging.WARNING)
+    
+    # Silence litellm internal proxy warnings (we don't use litellm proxy)
+    logging.getLogger("LiteLLM").setLevel(logging.CRITICAL)
+    logging.getLogger("litellm").setLevel(logging.CRITICAL)
+    logging.getLogger("litellm.litellm_core_utils").setLevel(logging.CRITICAL)
+    logging.getLogger("litellm.proxy").setLevel(logging.CRITICAL)
+    
+    # Silence httpx noise from LLM client calls
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 def get_logger(name: str):
     """Return a Loguru logger bound with a name."""
