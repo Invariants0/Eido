@@ -242,8 +242,9 @@ class CrewAIService:
             except:
                 output_data = {"raw_output": str(result)}
 
-            # Construct the result object
-            # We fetch actual stats from the router since it tracked the calls
+            # Construction of the result object
+            # We add a tiny delay to ensure background litellm callbacks have finished updating global stats
+            await asyncio.sleep(0.1)
             stats = self.router.get_usage_stats()
             
             return CrewRunResult(

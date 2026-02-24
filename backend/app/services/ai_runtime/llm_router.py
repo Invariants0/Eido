@@ -18,6 +18,70 @@ from ...exceptions import EidoException
 
 logger = get_logger(__name__)
 
+# Global counters to track usage across the entire application lifetime
+# This captures both direct router calls and CrewAI agent calls via litellm
+_GLOBAL_TOTAL_TOKENS = 0
+_GLOBAL_TOTAL_COST = 0.0
+
+def _litellm_success_callback(kwargs, completion_response, start_time, end_time):
+    """Global callback for litellm to track usage from any source."""
+    global _GLOBAL_TOTAL_TOKENS, _GLOBAL_TOTAL_COST
+    try:
+        usage = completion_response.get('usage', {})
+        tokens = usage.get('total_tokens', 0)
+        
+        # If tokens are 0 (common with Groq), use our tokenizer fallback logic
+        if tokens == 0:
+            model = kwargs.get('model', 'unknown')
+            # litellm expects a provider-prefixed model name
+            token_model = model if '/' in model else f"groq/{model}"
+            
+            from litellm import get_num_tokens
+            prompt = kwargs.get('messages', [{}])[-1].get('content', '')
+            response_text = completion_response.get('choices', [{}])[0].get('message', {}).get('content', '')
+            
+            try:
+                tokens = get_num_tokens(prompt, model=token_model) + get_num_tokens(response_text, model=token_model)
+            except:
+                tokens = int((len(prompt.split()) + len(response_text.split())) * 1.3)
+        
+        _GLOBAL_TOTAL_TOKENS += tokens
+        
+        # Estimate cost globally using the router's logic
+        # We can use a temporary router instance or access the map directly
+        # Since this is a standalone function, we look up the costs manually
+        model = kwargs.get('model', 'unknown')
+        costs = {"input": 0.0, "output": 0.0} # Default to zero
+        
+        # Direct lookup in the costs map (we'll make the map a class attribute)
+        for model_key, cost_values in LLMRouter.MODEL_COSTS.items():
+            if model_key in model.lower():
+                costs = cost_values
+                break
+        
+        # Simple split estimation: input ~prompt, output ~completion
+        # Since we only have total_tokens, we approximate 50/50 split for cost if not specified
+        # or we could parse messages but that's overkill. For free models, it's 0 anyway.
+        input_tokens = len(kwargs.get('messages', [{}])[-1].get('content', '').split()) * 1.3
+        output_tokens = tokens - input_tokens
+        
+        cost = ((input_tokens / 1000) * costs["input"]) + ((max(0, output_tokens) / 1000) * costs["output"])
+        _GLOBAL_TOTAL_COST += cost
+        
+        logger.info(f"Captured {tokens} tokens from litellm call ({model}). Total global: {_GLOBAL_TOTAL_TOKENS}")
+    except Exception as e:
+        logger.warning(f"Usage tracking callback failed: {e}")
+
+# Register the callback with litellm
+try:
+    import litellm
+    if _litellm_success_callback not in litellm.success_callback:
+        litellm.success_callback.append(_litellm_success_callback)
+except ImportError:
+    logger.warning("litellm not installed, global usage tracking disabled")
+except Exception as e:
+    logger.warning(f"Failed to register litellm callback: {e}")
+
 
 class TaskType(str, Enum):
     """Task types for LLM routing."""
@@ -73,6 +137,8 @@ class LLMRouter:
     }
     
     def __init__(self):
+        # We still keep local counts for instance-specific tracking if needed,
+        # but usage stats will report global totals by default.
         self.total_tokens_used = 0
         self.total_cost = 0.0
         # Task type to model mapping from config
@@ -127,9 +193,27 @@ class LLMRouter:
                 response_data = await self._raw_llm_call(model, prompt)
                 
                 raw_output = response_data['content']
-                input_tokens = response_data.get('input_tokens', len(prompt.split()) * 1.3)
-                output_tokens = response_data.get('output_tokens', len(raw_output.split()) * 1.3)
+                # Try to get token usage from provider response
+                input_tokens = response_data.get('input_tokens')
+                output_tokens = response_data.get('output_tokens')
+                # Groq does not return token counts – fall back to litellm tokenizer
+                # litellm expects a provider-prefixed model name (e.g. "groq/llama-3.3-70b-versatile")
+                token_model = model if model.startswith('groq/') else f"groq/{model}"
+                if input_tokens is None:
+                    try:
+                        from litellm import get_num_tokens
+                        input_tokens = get_num_tokens(prompt, model=token_model)
+                    except Exception:
+                        # Simple approximation as last resort
+                        input_tokens = int(len(prompt.split()) * 1.3)
+                if output_tokens is None:
+                    try:
+                        from litellm import get_num_tokens
+                        output_tokens = get_num_tokens(raw_output, model=token_model)
+                    except Exception:
+                        output_tokens = int(len(raw_output.split()) * 1.3)
                 total_tokens = int(input_tokens + output_tokens)
+                logger.debug(f"Token counts - input: {input_tokens}, output: {output_tokens}, total: {total_tokens}")
                 
                 cost = self.estimate_cost(model, int(input_tokens), int(output_tokens))
                 
@@ -214,8 +298,9 @@ class LLMRouter:
             raise ValueError(f"Schema validation failed: {e}")
 
     def get_usage_stats(self) -> Dict[str, Any]:
-        """Get current usage statistics."""
+        """Get usage statistics. Returns global totals to include CrewAI agents."""
+        # Aggregate local and global to be safe, but global should cover both
         return {
-            "total_tokens_used": self.total_tokens_used,
-            "total_cost": round(self.total_cost, 4),
+            "total_tokens_used": max(_GLOBAL_TOTAL_TOKENS, self.total_tokens_used),
+            "total_cost": round(max(_GLOBAL_TOTAL_COST, self.total_cost), 4),
         }
