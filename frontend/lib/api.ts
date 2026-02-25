@@ -1,7 +1,6 @@
 // -----------------------------------------
-// EIDO – Mock API Client
-// All functions simulate real backend calls
-// via delayed async responses (setTimeout).
+// EIDO – Production API Client
+// Real backend integration with FastAPI
 // -----------------------------------------
 
 import type {
@@ -11,685 +10,447 @@ import type {
     TokenInfo,
     AgentReasoning,
     MoltbookPost,
-} from './types';
-
-const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
-
-// ----------------------------------------
-// MOCK DATA
-// ----------------------------------------
-
-const MOCK_MVP: MVP = {
-    id: 'eido-001',
-    name: 'ResumeAI',
-    tagline: 'ATS-aware resume builder for job seekers',
-    status: 'deployed',
-    currentStage: 'Publish',
-    retryCount: 1,
-    mode: 'agent',
-    ideaSummary:
-        'Job seekers struggle to tailor resumes for ATS systems. Existing tools are expensive or fully manual. Eido identified this pain from r/cscareerquestions with a feasibility score of 8.4.',
-    techStack: ['Vite + React', 'Tailwind CSS', 'FastAPI', 'Docker', 'SURGE', 'here.now'],
-    stages: [
-        { name: 'Ideation', status: 'completed', agentName: 'IdeationAgent', durationMs: 3200, completedAt: '2026-02-24T00:01:00Z' },
-        { name: 'Architecture', status: 'completed', agentName: 'ArchitectureAgent', durationMs: 5800, completedAt: '2026-02-24T00:02:00Z' },
-        { name: 'Build', status: 'completed', agentName: 'BuilderAgent', durationMs: 12400, completedAt: '2026-02-24T00:04:00Z' },
-        { name: 'Fix', status: 'completed', agentName: 'ReflectionLoop', durationMs: 7600, completedAt: '2026-02-24T00:05:30Z' },
-        { name: 'Deploy', status: 'completed', agentName: 'DevOpsAgent', durationMs: 9200, completedAt: '2026-02-24T00:07:00Z' },
-        { name: 'Token', status: 'completed', agentName: 'BusinessAgent', durationMs: 2100, completedAt: '2026-02-24T00:07:30Z' },
-        { name: 'Publish', status: 'active', agentName: 'FeedbackAgent' },
-    ],
-    logs: [
-        { id: '1', timestamp: '00:00:01', agent: 'ManagerAgent', message: 'Initializing EIDO pipeline for eido-001...', level: 'system' },
-        { id: '2', timestamp: '00:00:03', agent: 'IdeationAgent', message: 'Searching Hacker News for pain points...', level: 'info' },
-        { id: '3', timestamp: '00:00:08', agent: 'IdeationAgent', message: 'Found 3 viable candidates. Top: "ATS resume fixer" score=8.4', level: 'success' },
-        { id: '4', timestamp: '00:00:12', agent: 'ArchitectureAgent', message: 'Generating system blueprint from approved template stack...', level: 'info' },
-        { id: '5', timestamp: '00:00:18', agent: 'ArchitectureAgent', message: 'Blueprint generated. Stack: Vite+React / FastAPI / Docker', level: 'success' },
-        { id: '6', timestamp: '00:00:22', agent: 'BuilderAgent', message: 'Scaffolding project files via OpenClaw file system tool...', level: 'info' },
-        { id: '7', timestamp: '00:00:31', agent: 'BuilderAgent', message: 'Running: docker build -t resumeai:latest .', level: 'info' },
-        { id: '8', timestamp: '00:00:44', agent: 'BuilderAgent', message: 'ERROR: Missing dependency "python-multipart"', level: 'error' },
-        { id: '9', timestamp: '00:00:46', agent: 'ReflectionLoop', message: 'Build failed. Compressing logs via Toon...', level: 'warning' },
-        { id: '10', timestamp: '00:00:49', agent: 'ReflectionLoop', message: 'Root cause identified: Missing pip dependency in requirements.txt', level: 'warning' },
-        { id: '11', timestamp: '00:00:51', agent: 'ReflectionLoop', message: 'Applying deterministic fix: Adding "python-multipart>=0.0.6"', level: 'info' },
-        { id: '12', timestamp: '00:00:53', agent: 'BuilderAgent', message: 'Retry (1/3): docker build -t resumeai:latest .', level: 'info' },
-        { id: '13', timestamp: '00:01:08', agent: 'BuilderAgent', message: 'BUILD SUCCESS. Image size: 287MB', level: 'success' },
-        { id: '14', timestamp: '00:01:10', agent: 'DevOpsAgent', message: 'Deploying to here.now runtime...', level: 'info' },
-        { id: '15', timestamp: '00:01:19', agent: 'DevOpsAgent', message: 'Health check passed. App responding on port 3000.', level: 'success' },
-        { id: '16', timestamp: '00:01:21', agent: 'DevOpsAgent', message: 'DEPLOYMENT ACTIVE: https://resumeai.eido.here.now', level: 'success' },
-        { id: '17', timestamp: '00:01:24', agent: 'BusinessAgent', message: 'Creating SURGE token: $RSMAI on testnet...', level: 'info' },
-        { id: '18', timestamp: '00:01:26', agent: 'BusinessAgent', message: 'Token minted. Contract: 0xabc...def. Supply: 1,000,000', level: 'success' },
-        { id: '19', timestamp: '00:01:29', agent: 'FeedbackAgent', message: 'Composing Moltbook post: "Built MVP #1: ResumeAI — Deployed & Tokenized"', level: 'info' },
-        { id: '20', timestamp: '00:01:31', agent: 'FeedbackAgent', message: 'Post published to Moltbook. Proof-of-life confirmed.', level: 'success' },
-        { id: '21', timestamp: '00:01:33', agent: 'ManagerAgent', message: 'Pipeline complete. Autonomous cycle eido-001 finished.', level: 'system' },
-    ],
-    reasoning: {
-        summary:
-            'Pipeline executed successfully after one build failure. The IdeationAgent selected the top-scoring idea from an r/cscareerquestions thread. The BuilderAgent generated a deterministic scaffold but encountered a missing Python dependency during the Docker build phase. The ReflectionLoop compressed the error logs via Toon and applied a targeted patch to requirements.txt, allowing the build to succeed on retry 1/3.',
-        retryExplanation:
-            'BuilderAgent retry triggered at 00:00:46 due to ModuleNotFoundError for "python-multipart". ReflectionLoop identified this as a missing pip dependency, not a logic error. Applied deterministic rule: append missing package to requirements.txt.',
-        reflectionNotes:
-            'This class of error (missing pip dependency) has now been flagged in the learnings store. Future builds using FastAPI will auto-include "python-multipart" in the base requirements template.',
-        contextCompressionSummary:
-            'Toon compressed 42 lines of Docker build logs → 3-line structured error summary. Total tokens saved: ~1,840. Compression ratio: 14x.',
-        lastStepOutput: {
-            stage: 'Publish',
-            agent: 'FeedbackAgent',
-            action: 'post_to_moltbook',
-            status: 'success',
-            post_id: 'mlt-00192',
-            engagement: {
-                views: 0,
-                reactions: 0,
-            },
-        },
-        ideationDiscovery: {
-            marketAnalysis: {
-                tam: '$2.4B Global Recruitment Market',
-                competitors: ['Canva', 'Teal', 'Jobscan'],
-                swot: {
-                    strength: 'Fully autonomous tailoring',
-                    weakness: 'Cold start for domain niches',
-                    opportunity: 'Direct integration with SURGE payroll',
-                    threat: 'LLM context window costs'
-                }
-            },
-            userInterrogations: [
-                {
-                    persona: 'Recent Graduate',
-                    critique: 'I need it to handle my lack of experience without sounding fake.',
-                    confidenceScore: 92
-                },
-                {
-                    persona: 'Technical Recruiter',
-                    critique: 'Make sure it doesn\'t include irrelevant buzzword-stuffing.',
-                    confidenceScore: 88
-                }
-            ],
-            brandingConcepts: {
-                colors: ['#22D3EE', '#0B0F19', '#F59E0B'],
-                fontVibe: 'Clean, Geometric Sans + JetBrains Mono',
-                logoDescription: 'A stylized "R" formed by converging circuit traces.'
-            }
-        }
-    },
-    deployment: {
-        url: 'https://resumeai.eido.here.now',
-        status: 'running',
-        timestamp: '2026-02-24T00:01:21Z',
-        containerId: 'cnt_resumeai_8f2d',
-        platform: 'here.now',
-    },
-    token: {
-        name: 'ResumeAI Token',
-        symbol: 'RSMAI',
-        contractAddress: '0xabc123def456abc789def012abc345def678',
-        supply: 1_000_000,
-        createdAt: '2026-02-24T00:01:26Z',
-        txHash: '0xtx9f2e81a0d7c6b4e3f5a2c1b0d9e8f7a6b5c4',
-    },
-    moltbook: {
-        status: 'posted',
-        postUrl: 'https://moltbook.com/eido/post/mlt-00192',
-        message: 'Built MVP #1: ResumeAI — Deployed & Tokenized. Autonomous cycle complete. #EIDO #SURGE #OpenClaw',
-        timestamp: '2026-02-24T00:01:31Z',
-    },
-    createdAt: '2026-02-24T00:00:00Z',
-};
-
-// ----------------------------------------
-// API FUNCTIONS
-// ----------------------------------------
-
-export async function getMVP(id: string): Promise<MVP> {
-    await delay(600);
-    console.log(`[api] getMVP(${id})`);
-    return { ...MOCK_MVP, id };
-}
-
-export async function getAgentStatus(id: string): Promise<{ stage: string; status: string; retryCount: number }> {
-    await delay(300);
-    console.log(`[api] getAgentStatus(${id})`);
-    return {
-        stage: MOCK_MVP.currentStage,
-        status: MOCK_MVP.status,
-        retryCount: MOCK_MVP.retryCount,
-    };
-}
-
-export async function getAgentLogs(id: string): Promise<AgentLog[]> {
-    await delay(400);
-    console.log(`[api] getAgentLogs(${id})`);
-    return MOCK_MVP.logs;
-}
-
-export async function getToken(id: string): Promise<TokenInfo> {
-    await delay(300);
-    console.log(`[api] getToken(${id})`);
-    return MOCK_MVP.token;
-}
-
-export async function getDeploymentStatus(id: string): Promise<DeploymentStatus> {
-    await delay(350);
-    console.log(`[api] getDeploymentStatus(${id})`);
-    return MOCK_MVP.deployment;
-}
-
-export async function getAgentReasoning(id: string): Promise<AgentReasoning> {
-    await delay(450);
-    console.log(`[api] getAgentReasoning(${id})`);
-    return MOCK_MVP.reasoning;
-}
-
-export async function getMoltbookPost(id: string): Promise<MoltbookPost> {
-    await delay(300);
-    console.log(`[api] getMoltbookPost(${id})`);
-    return MOCK_MVP.moltbook;
-}
-
-export async function triggerRetryBuild(id: string): Promise<{ success: boolean }> {
-    await delay(800);
-    console.log(`[api] triggerRetryBuild(${id})`);
-    return { success: true };
-}
-
-export async function advanceStage(id: string): Promise<{ success: boolean; newStage: string }> {
-    await delay(600);
-    console.log(`[api] advanceStage(${id})`);
-    return { success: true, newStage: 'Deploy' };
-}
-
-// ----------------------------------------
-// TOKEN DETAIL PAGE – MOCK DATA & API
-// ----------------------------------------
-
-import type {
     TokenDetail,
     TokenTransfer,
     OwnershipInfo,
     TokenUtility,
     PortfolioEntry,
+    SystemStatus,
+    MVPListItem,
+    TokenListItem,
+    AgentTimelineItem,
+    AgentMemory,
+    ReflectionNote,
+    DashboardSummary,
+    ActivityLog,
 } from './types';
 
-const MOCK_TOKEN_DETAIL: TokenDetail = {
-    id: 'surge-rsmai-001',
-    name: 'ResumeAI Token',
-    symbol: 'RSMAI',
-    status: 'active',
-    tokenType: 'utility',
-    contractAddress: '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
-    totalSupply: 1_000_000,
-    circulatingSupply: 620_000,
-    creatorWallet: '0xEido7a2f...9c4dAgent',
-    network: 'testnet',
-    createdAt: '2026-02-24T00:01:26Z',
-    mintTxHash: '0xtx9f2e81a0d7c6b4e3f5a2c1b0d9e8f7a6b5c4d3e2f1a0',
-    mvpId: 'eido-001',
-    mvpName: 'ResumeAI',
-    price: 0.42,
-    priceChange24h: 12.5,
-    marketCap: 420_000,
-    holders: 156,
-};
-
-const MOCK_TRANSFERS: TokenTransfer[] = [
-    { id: 'tx-1', txHash: '0xa1b2c3...d4e5', from: '0x0000...0000', to: '0xEido...Agent', amount: 1_000_000, timestamp: '2026-02-24T00:01:26Z', type: 'mint', status: 'confirmed' },
-    { id: 'tx-2', txHash: '0xf6e7d8...c9b0', from: '0xEido...Agent', to: '0xTreasury...Vault', amount: 200_000, timestamp: '2026-02-24T00:02:10Z', type: 'transfer', status: 'confirmed' },
-    { id: 'tx-3', txHash: '0x1a2b3c...4d5e', from: '0xUser1...Addr', to: '0xDEX...Pool', amount: 500, timestamp: '2026-02-24T01:15:00Z', type: 'buy', status: 'confirmed' },
-    { id: 'tx-4', txHash: '0x5f6e7d...8c9b', from: '0xUser2...Addr', to: '0xDEX...Pool', amount: 120, timestamp: '2026-02-24T01:20:00Z', type: 'sell', status: 'confirmed' },
-    { id: 'tx-5', txHash: '0x0a1b2c...3d4e', from: '0xUser3...Addr', to: '0xDEX...Pool', amount: 2_500, timestamp: '2026-02-24T01:30:00Z', type: 'buy', status: 'pending' },
-];
-
-const MOCK_OWNERSHIP: OwnershipInfo = {
-    ownerWallet: '0xEido7a2f...9c4dAgent',
-    percentageOwned: 38,
-    treasuryBalance: 84_000,
-    revenuePool: 12_600,
-    allocations: [
-        { label: 'Public Circulation', percentage: 62, color: '#3B82F6' },
-        { label: 'EIDO Treasury', percentage: 20, color: '#22D3EE' },
-        { label: 'Creator Agent', percentage: 10, color: '#10B981' },
-        { label: 'Liquidity Pool', percentage: 5, color: '#F59E0B' },
-        { label: 'Reserve', percentage: 3, color: '#9CA3AF' },
-    ],
-};
-
-const MOCK_UTILITIES: TokenUtility[] = [
-    { title: 'Early MVP Access', description: 'Token holders get priority access to new features and beta releases of ResumeAI before public launch.', active: true },
-    { title: 'Governance Voting', description: 'Participate in product direction decisions — feature prioritization, pricing model, and integration roadmap.', active: true },
-    { title: 'Revenue Participation', description: 'Pro-rata share of 15% of net MVP revenue distributed quarterly to token holders.', active: false },
-    { title: 'Usage Credits', description: '1 RSMAI = 10 premium resume analyses. Holders receive unlimited basic-tier access.', active: true },
-];
-
-const MOCK_PORTFOLIO: PortfolioEntry[] = [
-    { tokenId: 'surge-rsmai-001', tokenName: 'ResumeAI Token', symbol: 'RSMAI', holdings: 25_000, value: 10_500, change24h: 12.5 },
-    { tokenId: 'surge-fitai-002', tokenName: 'FitTrackAI Token', symbol: 'FTAI', holdings: 10_000, value: 3_200, change24h: -4.2 },
-    { tokenId: 'surge-codex-003', tokenName: 'CodexBot Token', symbol: 'CDXB', holdings: 50_000, value: 7_500, change24h: 8.1 },
-];
-
-export async function getTokenDetail(id: string): Promise<TokenDetail> {
-    await delay(500);
-    console.log(`[api] getTokenDetail(${id})`);
-    return { ...MOCK_TOKEN_DETAIL, id };
-}
-
-export async function getTokenActivity(id: string): Promise<TokenTransfer[]> {
-    await delay(400);
-    console.log(`[api] getTokenActivity(${id})`);
-    return MOCK_TRANSFERS;
-}
-
-export async function getTokenOwnership(id: string): Promise<OwnershipInfo> {
-    await delay(350);
-    console.log(`[api] getTokenOwnership(${id})`);
-    return MOCK_OWNERSHIP;
-}
-
-export async function getTokenUtilities(id: string): Promise<TokenUtility[]> {
-    await delay(300);
-    console.log(`[api] getTokenUtilities(${id})`);
-    return MOCK_UTILITIES;
-}
-
-export async function getPortfolio(): Promise<PortfolioEntry[]> {
-    await delay(450);
-    console.log(`[api] getPortfolio()`);
-    return MOCK_PORTFOLIO;
-}
-
 // ----------------------------------------
-// SYSTEM STATUS PAGE – MOCK DATA & API
+// CONFIGURATION
 // ----------------------------------------
 
-import type { SystemStatus } from './types';
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
 
-const MOCK_SYSTEM_STATUS: SystemStatus = {
-    overallHealth: 'operational',
-    lastUpdated: '2026-02-24T01:40:00Z',
-    services: [
-        {
-            name: 'OpenClaw Runtime',
-            key: 'openclaw',
-            health: 'operational',
-            lastChecked: '2026-02-24T01:39:58Z',
-            details: {
-                status: 'Running',
-                version: 'v0.4.8-alpha',
-                uptime: '14h 23m',
-                region: 'us-east-1',
-                containers: 3,
-                memoryUsage: '2.1 GB / 8 GB',
-            },
-        },
-        {
-            name: 'LLM Provider',
-            key: 'llm',
-            health: 'operational',
-            lastChecked: '2026-02-24T01:39:55Z',
-            details: {
-                provider: 'OpenAI',
-                model: 'gpt-4o',
-                apiStatus: 'Connected',
-                latencyMs: 320,
-                tokensUsed: '48,200',
-                rateLimit: '10,000 TPM',
-            },
-        },
-        {
-            name: 'CrewAI Orchestrator',
-            key: 'crewai',
-            health: 'operational',
-            lastChecked: '2026-02-24T01:39:52Z',
-            details: {
-                activePipeline: 'eido-001',
-                currentJob: 'FeedbackAgent → Publish',
-                status: 'Running',
-                agentsLoaded: 7,
-                tasksCompleted: 21,
-                queueDepth: 0,
-            },
-        },
-        {
-            name: 'Docker Engine',
-            key: 'docker',
-            health: 'operational',
-            lastChecked: '2026-02-24T01:39:50Z',
-            details: {
-                connected: true,
-                version: '24.0.7',
-                lastBuild: '2026-02-24T00:04:00Z',
-                runningContainers: 2,
-                images: 5,
-                totalBuilds: 3,
-            },
-        },
-        {
-            name: 'SURGE Skill',
-            key: 'surge',
-            health: 'operational',
-            lastChecked: '2026-02-24T01:39:48Z',
-            details: {
-                walletStatus: 'Connected',
-                network: 'OpenClaw Testnet',
-                tokenCapability: 'Mint / Transfer / Burn',
-                tokensCreated: 1,
-                lastMint: '2026-02-24T00:01:26Z',
-                balance: '0.42 ETH (testnet)',
-            },
-        },
-        {
-            name: 'Moltbook Integration',
-            key: 'moltbook',
-            health: 'degraded',
-            lastChecked: '2026-02-24T01:39:45Z',
-            details: {
-                connected: true,
-                apiLatency: '1,240ms (elevated)',
-                lastPost: '2026-02-24T00:01:31Z',
-                postsToday: 1,
-                webhookStatus: 'Delayed',
-                rateLimitRemaining: '48/50',
-            },
-        },
-        {
-            name: 'Toon Optimizer',
-            key: 'toon',
-            health: 'operational',
-            lastChecked: '2026-02-24T01:39:42Z',
-            details: {
-                active: true,
-                lastCompression: 'Docker build logs → 3-line summary',
-                compressionRatio: '14x',
-                tokensSaved: 1840,
-                totalCompressions: 6,
-                avgRatio: '11.2x',
-            },
-        },
-    ],
-};
+// ----------------------------------------
+// ERROR HANDLING
+// ----------------------------------------
 
-export async function getSystemStatus(): Promise<SystemStatus> {
-    await delay(600);
-    console.log(`[api] getSystemStatus()`);
-    return MOCK_SYSTEM_STATUS;
+interface ApiError {
+    message: string;
+    status: number;
 }
 
-// ----------------------------------------
-// LIST PAGE – MOCK DATA & API
-// ----------------------------------------
+class ApiRequestError extends Error {
+    status: number;
 
-import type { MVPListItem, TokenListItem } from './types';
-
-const MOCK_MVP_LIST: MVPListItem[] = [
-    {
-        id: 'eido-001',
-        name: 'ResumeAI',
-        tagline: 'ATS-aware resume builder for job seekers',
-        status: 'deployed',
-        currentStage: 'Publish',
-        tokenSymbol: 'RSMAI',
-        tokenStatus: 'minted',
-        deploymentUrl: 'https://resumeai.eido.here.now',
-        createdAt: '2026-02-24T00:00:00Z',
-    },
-    {
-        id: 'eido-002',
-        name: 'FitTrackAI',
-        tagline: 'AI-powered workout planner with wearable sync',
-        status: 'building',
-        currentStage: 'Build',
-        tokenSymbol: 'FTAI',
-        tokenStatus: 'pending',
-        createdAt: '2026-02-23T18:00:00Z',
-    },
-    {
-        id: 'eido-003',
-        name: 'CodexBot',
-        tagline: 'Autonomous code review agent for GitHub PRs',
-        status: 'deployed',
-        currentStage: 'Publish',
-        tokenSymbol: 'CDXB',
-        tokenStatus: 'minted',
-        deploymentUrl: 'https://codexbot.eido.here.now',
-        createdAt: '2026-02-22T12:30:00Z',
-    },
-    {
-        id: 'eido-004',
-        name: 'TaxHelper',
-        tagline: 'Automated freelancer tax estimation tool',
-        status: 'failed',
-        currentStage: 'Build',
-        tokenSymbol: '',
-        tokenStatus: 'none',
-        createdAt: '2026-02-21T09:15:00Z',
-    },
-    {
-        id: 'eido-005',
-        name: 'MealPlanr',
-        tagline: 'Personalized meal planning with macro tracking',
-        status: 'idea',
-        currentStage: 'Ideation',
-        tokenSymbol: '',
-        tokenStatus: 'none',
-        createdAt: '2026-02-24T01:00:00Z',
-    },
-];
-
-const MOCK_TOKEN_LIST: TokenListItem[] = [
-    {
-        id: 'surge-rsmai-001',
-        name: 'ResumeAI Token',
-        symbol: 'RSMAI',
-        mvpId: 'eido-001',
-        mvpName: 'ResumeAI',
-        contractAddress: '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
-        totalSupply: 1_000_000,
-        status: 'active',
-        price: 0.42,
-        priceChange24h: 12.5,
-        holders: 156,
-        createdAt: '2026-02-24T00:01:26Z',
-    },
-    {
-        id: 'surge-cdxb-003',
-        name: 'CodexBot Token',
-        symbol: 'CDXB',
-        mvpId: 'eido-003',
-        mvpName: 'CodexBot',
-        contractAddress: '0x9a8f2c6E4b3D1A7F5E0C8B9D2A6F4E1C3B7D5A0',
-        totalSupply: 500_000,
-        status: 'active',
-        price: 0.15,
-        priceChange24h: 8.1,
-        holders: 89,
-        createdAt: '2026-02-22T14:00:00Z',
-    },
-    {
-        id: 'surge-ftai-002',
-        name: 'FitTrackAI Token',
-        symbol: 'FTAI',
-        mvpId: 'eido-002',
-        mvpName: 'FitTrackAI',
-        contractAddress: '0x0000000000000000000000000000000000000000',
-        totalSupply: 750_000,
-        status: 'minted',
-        price: 0.00,
-        priceChange24h: 0,
-        holders: 0,
-        createdAt: '2026-02-23T19:30:00Z',
-    },
-];
-
-export async function getMVPList(): Promise<MVPListItem[]> {
-    await delay(500);
-    console.log(`[api] getMVPList()`);
-    return MOCK_MVP_LIST;
-}
-
-export async function getTokenList(): Promise<TokenListItem[]> {
-    await delay(400);
-    console.log(`[api] getTokenList()`);
-    return MOCK_TOKEN_LIST;
-}
-
-// ----------------------------------------
-// AGENT BRAIN PAGE – MOCK DATA & API
-// ----------------------------------------
-
-import type { AgentTimelineItem, AgentMemory, ReflectionNote } from './types';
-
-const MOCK_AGENT_TIMELINE: AgentTimelineItem[] = [
-    {
-        id: 't-1',
-        stageName: 'Ideation',
-        agentName: 'IdeationAgent',
-        reasoningSummary: 'Evaluated 12 ideas. Selected "ATS-aware resume builder" for feasibility.',
-        timestamp: '2026-02-24T00:01:00Z',
-        status: 'success',
-        details: 'High search volume on HN, direct monetization path. Competitors are manual or expensive.',
-    },
-    {
-        id: 't-2',
-        stageName: 'Architecture',
-        agentName: 'ArchitectureAgent',
-        reasoningSummary: 'Chose Vite+React + FastAPI. Optimized for fast AI streaming.',
-        timestamp: '2026-02-24T00:02:00Z',
-        status: 'success',
-        details: 'Decoupled frontend for Vercel deployment, Dockerized backend for OpenClaw.',
-    },
-    {
-        id: 't-3',
-        stageName: 'Build',
-        agentName: 'BuilderAgent',
-        reasoningSummary: 'Failed to build due to missing pip dependency.',
-        timestamp: '2026-02-24T00:04:00Z',
-        status: 'failed',
-        details: 'ModuleNotFoundError: No module named \'multipart\'. Attempting reflection.',
-    },
-    {
-        id: 't-4',
-        stageName: 'Reflection',
-        agentName: 'ReflectionLoop',
-        reasoningSummary: 'Identified missing package. Added python-multipart to requirements.',
-        timestamp: '2026-02-24T00:05:30Z',
-        status: 'retry',
-        details: 'Deterministic fix: Base template updated for all future FastAPI builds.',
-    },
-    {
-        id: 't-5',
-        stageName: 'Deploy',
-        agentName: 'DeploymentAgent',
-        reasoningSummary: 'Container deployed successfully on here.now.',
-        timestamp: '2026-02-24T00:07:00Z',
-        status: 'success',
-        details: 'Health check passed. Container cnt_resumeai_8f2d running.',
-    },
-    {
-        id: 't-6',
-        stageName: 'Token',
-        agentName: 'TokenAgent',
-        reasoningSummary: 'Minted RSMAI token on SURGE testnet.',
-        timestamp: '2026-02-24T00:07:30Z',
-        status: 'success',
-        details: 'Supply: 1M. Allocated 20% to Treasury, 62% Public.',
+    constructor(message: string, status: number) {
+        super(message);
+        this.name = 'ApiRequestError';
+        this.status = status;
     }
-];
-
-const MOCK_AGENT_MEMORY: AgentMemory = {
-    currentObjective: 'Orchestrate pipeline for ResumeAI MVP',
-    stage: 'Publish',
-    retryCount: 1,
-    contextCompression: {
-        originalTokens: 14250,
-        compressedTokens: 850,
-        reason: 'Toon compression triggered after build failure log exceeded window threshold.',
-    },
-    lastAgentOutput: {
-        action: 'create_contract',
-        network: 'surge-testnet',
-        parameters: {
-            name: 'ResumeAI Token',
-            symbol: 'RSMAI',
-            supply: 1000000
-        },
-        transactionHash: '0xabc123def456abc789def012abc345def678',
-        verification_status: 'confirmed'
-    }
-};
-
-const MOCK_REFLECTION_NOTES: ReflectionNote[] = [
-    {
-        id: 'r-1',
-        errorExplanation: 'Docker build failed at `pip install -r requirements.txt`. Missing `python-multipart` required by FastAPI for file uploads.',
-        correctionApplied: 'Added `python-multipart>=0.0.6` to `requirements.txt` and restarted container build task.',
-        deterministicFix: 'Updated global architecture template `fastapi-base` to include `python-multipart` by default.',
-    }
-];
-
-export async function getAgentTimeline(): Promise<AgentTimelineItem[]> {
-    await delay(400);
-    return MOCK_AGENT_TIMELINE;
-}
-
-export async function getAgentMemory(): Promise<AgentMemory> {
-    await delay(350);
-    return MOCK_AGENT_MEMORY;
-}
-
-export async function getReflectionNotes(): Promise<ReflectionNote[]> {
-    await delay(300);
-    return MOCK_REFLECTION_NOTES;
 }
 
 // ----------------------------------------
-// DASHBOARD PAGE – MOCK DATA & API
+// CORE REQUEST HELPER
 // ----------------------------------------
 
-import type { DashboardSummary, ActivityLog } from './types';
+async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
+    const url = `${BASE_URL}${path}`;
+    
+    try {
+        const response = await fetch(url, {
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                ...options?.headers,
+            },
+        });
 
-export async function getDashboardSummary(): Promise<DashboardSummary> {
-    await delay(300);
+        // Handle non-OK responses
+        if (!response.ok) {
+            let errorMessage = `Request failed with status ${response.status}`;
+            
+            try {
+                const errorData = await response.json();
+                errorMessage = errorData.detail || errorData.message || errorMessage;
+            } catch {
+                // If JSON parsing fails, use status text
+                errorMessage = response.statusText || errorMessage;
+            }
+            
+            throw new ApiRequestError(errorMessage, response.status);
+        }
+
+        // Parse JSON response safely
+        try {
+            return await response.json();
+        } catch (error) {
+            throw new ApiRequestError('Failed to parse response JSON', response.status);
+        }
+    } catch (error) {
+        // Network errors or fetch failures
+        if (error instanceof ApiRequestError) {
+            throw error;
+        }
+        
+        // Log the actual error for debugging
+        console.error('[API] Network error:', error);
+        throw new Error(`Network error. Backend unavailable. ${error instanceof Error ? error.message : ''}`);
+    }
+}
+
+// ----------------------------------------
+// MVP API FUNCTIONS
+// ----------------------------------------
+
+interface MVPCreateRequest {
+    name: string;
+    idea_summary?: string;
+}
+
+interface MVPBackendResponse {
+    id: number;
+    name: string;
+    status: string;
+    idea_summary: string | null;
+    deployment_url: string | null;
+    token_id: string | null;
+    retry_count: number;
+    created_at: string;
+    updated_at: string;
+}
+
+interface MVPListBackendResponse {
+    items: MVPBackendResponse[];
+    total: number;
+}
+
+interface MVPRunsResponse {
+    mvp_id: number;
+    runs: unknown[];
+}
+
+/**
+ * Start a new MVP pipeline.
+ * Returns 202 Accepted - pipeline runs in background.
+ */
+export async function startMVP(data: MVPCreateRequest): Promise<MVPBackendResponse> {
+    return apiRequest<MVPBackendResponse>('/api/mvp/start', {
+        method: 'POST',
+        body: JSON.stringify(data),
+    });
+}
+
+/**
+ * List all MVPs with pagination.
+ */
+export async function listMVPs(page: number = 1, limit: number = 20): Promise<MVPListBackendResponse> {
+    const skip = (page - 1) * limit;
+    return apiRequest<MVPListBackendResponse>(`/api/mvp/list?skip=${skip}&limit=${limit}`);
+}
+
+/**
+ * Get MVP by ID.
+ */
+export async function getMVP(id: string): Promise<MVPBackendResponse> {
+    return apiRequest<MVPBackendResponse>(`/api/mvp/${id}`);
+}
+
+/**
+ * Get all agent runs for an MVP.
+ */
+export async function getMVPRuns(id: string): Promise<MVPRunsResponse> {
+    return apiRequest<MVPRunsResponse>(`/api/mvp/${id}/runs`);
+}
+
+// ----------------------------------------
+// POLLING HELPER
+// ----------------------------------------
+
+interface PollOptions {
+    intervalMs?: number;
+    timeoutMs?: number;
+}
+
+/**
+ * Poll MVP until it reaches a terminal state.
+ * Does NOT auto-run - must be called explicitly.
+ */
+export async function pollMVPUntilComplete(
+    id: string,
+    options: PollOptions = {}
+): Promise<MVPBackendResponse> {
+    const { intervalMs = 3000, timeoutMs = 600000 } = options; // 10 min default timeout
+    const startTime = Date.now();
+
+    while (true) {
+        const mvp = await getMVP(id);
+        
+        // Check for terminal states
+        if (mvp.status === 'deployed' || mvp.status === 'failed') {
+            return mvp;
+        }
+
+        // Check timeout
+        if (Date.now() - startTime > timeoutMs) {
+            throw new Error(`Polling timeout after ${timeoutMs}ms`);
+        }
+
+        // Wait before next poll
+        await new Promise(resolve => setTimeout(resolve, intervalMs));
+    }
+}
+
+// ----------------------------------------
+// HEALTH & METRICS API
+// ----------------------------------------
+
+interface HealthResponse {
+    status: string;
+    timestamp: string;
+    version: string;
+    environment: string;
+}
+
+interface DeepHealthResponse extends HealthResponse {
+    checks: Record<string, unknown>;
+}
+
+export async function getHealth(): Promise<HealthResponse> {
+    return apiRequest<HealthResponse>('/health');
+}
+
+export async function getDeepHealth(): Promise<DeepHealthResponse> {
+    return apiRequest<DeepHealthResponse>('/health/deep');
+}
+
+export async function getMetrics(): Promise<string> {
+    return apiRequest<string>('/metrics');
+}
+
+// ----------------------------------------
+// LEGACY MOCK FUNCTIONS (Temporary Stubs)
+// These maintain compatibility with existing UI
+// until backend implements full feature set
+// ----------------------------------------
+
+export async function getAgentStatus(id: string): Promise<{ stage: string; status: string; retryCount: number }> {
+    const mvp = await getMVP(id);
     return {
-        totalMvps: 5,
-        activeBuilds: 1,
-        deployedMvps: 2,
-        tokensCreated: 2,
+        stage: 'Build', // TODO: Map from backend state
+        status: mvp.status,
+        retryCount: mvp.retry_count,
     };
 }
 
-const MOCK_ACTIVITY: ActivityLog[] = [
-    {
-        id: 'act-1',
-        message: 'FeedbackAgent posted ResumeAI progress to Moltbook.',
-        timestamp: '2026-02-24T00:01:31Z',
-        type: 'system'
-    },
-    {
-        id: 'act-2',
-        message: 'TokenAgent successfully minted $RSMAI on SURGE testnet.',
-        timestamp: '2026-02-24T00:01:26Z',
-        type: 'token'
-    },
-    {
-        id: 'act-3',
-        message: 'DeploymentAgent successfully deployed cnt_resumeai_8f2d.',
-        timestamp: '2026-02-24T00:01:21Z',
-        type: 'deploy'
-    },
-    {
-        id: 'act-4',
-        message: 'BuilderAgent encountered pip dependency error. Reflection triggered.',
-        timestamp: '2026-02-24T00:00:46Z',
-        type: 'error'
-    },
-    {
-        id: 'act-5',
-        message: 'BuilderAgent started project scaffold for FitTrackAI.',
-        timestamp: '2026-02-23T18:05:12Z',
-        type: 'build'
-    }
-];
+export async function getAgentLogs(id: string): Promise<AgentLog[]> {
+    // TODO: Backend needs to implement logs endpoint
+    console.warn('[api] getAgentLogs not yet implemented in backend');
+    return [];
+}
+
+export async function getToken(id: string): Promise<TokenInfo> {
+    // TODO: Backend needs to implement token detail endpoint
+    console.warn('[api] getToken not yet implemented in backend');
+    return {
+        name: 'Token',
+        symbol: 'TKN',
+        contractAddress: '0x0000000000000000000000000000000000000000',
+        supply: 0,
+        createdAt: new Date().toISOString(),
+        txHash: '0x0000000000000000000000000000000000000000',
+    };
+}
+
+export async function getDeploymentStatus(id: string): Promise<DeploymentStatus> {
+    const mvp = await getMVP(id);
+    return {
+        url: mvp.deployment_url || '',
+        status: mvp.status === 'deployed' ? 'running' : 'building',
+        timestamp: mvp.updated_at,
+        platform: 'here.now',
+    };
+}
+
+export async function getAgentReasoning(id: string): Promise<AgentReasoning> {
+    // TODO: Backend needs to implement reasoning endpoint
+    console.warn('[api] getAgentReasoning not yet implemented in backend');
+    return {
+        summary: 'Reasoning data not yet available from backend',
+        reflectionNotes: '',
+        contextCompressionSummary: '',
+        lastStepOutput: {},
+    };
+}
+
+export async function getMoltbookPost(id: string): Promise<MoltbookPost> {
+    // TODO: Backend needs to implement moltbook endpoint
+    console.warn('[api] getMoltbookPost not yet implemented in backend');
+    return {
+        status: 'pending',
+        message: '',
+        timestamp: new Date().toISOString(),
+    };
+}
+
+export async function triggerRetryBuild(id: string): Promise<{ success: boolean }> {
+    // TODO: Backend needs to implement retry endpoint
+    console.warn('[api] triggerRetryBuild not yet implemented in backend');
+    return { success: false };
+}
+
+export async function advanceStage(id: string): Promise<{ success: boolean; newStage: string }> {
+    // TODO: Backend needs to implement stage advancement endpoint
+    console.warn('[api] advanceStage not yet implemented in backend');
+    return { success: false, newStage: '' };
+}
+
+// ----------------------------------------
+// TOKEN DETAIL PAGE API (Stubs)
+// ----------------------------------------
+
+export async function getTokenDetail(id: string): Promise<TokenDetail> {
+    console.warn('[api] getTokenDetail not yet implemented in backend');
+    return {
+        id,
+        name: 'Token',
+        symbol: 'TKN',
+        status: 'active',
+        tokenType: 'utility',
+        contractAddress: '0x0000000000000000000000000000000000000000',
+        totalSupply: 0,
+        circulatingSupply: 0,
+        creatorWallet: '0x0000000000000000000000000000000000000000',
+        network: 'testnet',
+        createdAt: new Date().toISOString(),
+        mintTxHash: '0x0000000000000000000000000000000000000000',
+        mvpId: '',
+        mvpName: '',
+        price: 0,
+        priceChange24h: 0,
+        marketCap: 0,
+        holders: 0,
+    };
+}
+
+export async function getTokenActivity(id: string): Promise<TokenTransfer[]> {
+    console.warn('[api] getTokenActivity not yet implemented in backend');
+    return [];
+}
+
+export async function getTokenOwnership(id: string): Promise<OwnershipInfo> {
+    console.warn('[api] getTokenOwnership not yet implemented in backend');
+    return {
+        ownerWallet: '0x0000000000000000000000000000000000000000',
+        percentageOwned: 0,
+        treasuryBalance: 0,
+        revenuePool: 0,
+        allocations: [],
+    };
+}
+
+export async function getTokenUtilities(id: string): Promise<TokenUtility[]> {
+    console.warn('[api] getTokenUtilities not yet implemented in backend');
+    return [];
+}
+
+export async function getPortfolio(): Promise<PortfolioEntry[]> {
+    console.warn('[api] getPortfolio not yet implemented in backend');
+    return [];
+}
+
+// ----------------------------------------
+// SYSTEM STATUS PAGE API (Stub)
+// ----------------------------------------
+
+export async function getSystemStatus(): Promise<SystemStatus> {
+    console.warn('[api] getSystemStatus not yet implemented in backend');
+    return {
+        overallHealth: 'operational',
+        lastUpdated: new Date().toISOString(),
+        services: [],
+    };
+}
+
+// ----------------------------------------
+// LIST PAGE API (Stubs)
+// ----------------------------------------
+
+export async function getMVPList(): Promise<MVPListItem[]> {
+    console.warn('[api] getMVPList not yet implemented - use listMVPs instead');
+    const response = await listMVPs(1, 100);
+    
+    // Map backend response to frontend format
+    return response.items.map(item => ({
+        id: item.id.toString(),
+        name: item.name,
+        tagline: item.idea_summary || '',
+        status: item.status as 'idea' | 'building' | 'failed' | 'deployed',
+        currentStage: 'Build' as const, // TODO: Map from backend
+        tokenSymbol: item.token_id || '',
+        tokenStatus: item.token_id ? 'minted' as const : 'none' as const,
+        deploymentUrl: item.deployment_url || undefined,
+        createdAt: item.created_at,
+    }));
+}
+
+export async function getTokenList(): Promise<TokenListItem[]> {
+    console.warn('[api] getTokenList not yet implemented in backend');
+    return [];
+}
+
+// ----------------------------------------
+// AGENT BRAIN PAGE API (Stubs)
+// ----------------------------------------
+
+export async function getAgentTimeline(): Promise<AgentTimelineItem[]> {
+    console.warn('[api] getAgentTimeline not yet implemented in backend');
+    return [];
+}
+
+export async function getAgentMemory(): Promise<AgentMemory> {
+    console.warn('[api] getAgentMemory not yet implemented in backend');
+    return {
+        currentObjective: '',
+        stage: '',
+        retryCount: 0,
+        contextCompression: {
+            originalTokens: 0,
+            compressedTokens: 0,
+            reason: '',
+        },
+        lastAgentOutput: {},
+    };
+}
+
+export async function getReflectionNotes(): Promise<ReflectionNote[]> {
+    console.warn('[api] getReflectionNotes not yet implemented in backend');
+    return [];
+}
+
+// ----------------------------------------
+// DASHBOARD PAGE API (Stubs)
+// ----------------------------------------
+
+export async function getDashboardSummary(): Promise<DashboardSummary> {
+    console.warn('[api] getDashboardSummary not yet implemented in backend');
+    const response = await listMVPs(1, 100);
+    
+    // Calculate summary from MVP list
+    const totalMvps = response.total;
+    const activeBuilds = response.items.filter(m => m.status === 'building').length;
+    const deployedMvps = response.items.filter(m => m.status === 'deployed').length;
+    const tokensCreated = response.items.filter(m => m.token_id).length;
+    
+    return {
+        totalMvps,
+        activeBuilds,
+        deployedMvps,
+        tokensCreated,
+    };
+}
 
 export async function getRecentActivity(): Promise<ActivityLog[]> {
-    await delay(450);
-    return MOCK_ACTIVITY;
+    console.warn('[api] getRecentActivity not yet implemented in backend');
+    return [];
 }
