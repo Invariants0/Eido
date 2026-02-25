@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "skills": {
+    "frontend-design": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "063a0e6448123cd359ad0044cc46b0e490cc7964d45ef4bb9fd842bd2ffbca67"
+    },
+    "frontend-ui-ux-engineer": {
+      "source": "404kidwiz/claude-supercode-skills",
+      "sourceType": "github",
+      "computedHash": "074176a7c86baeea322124c5d3dd0104561d752ca408ff994ae742b61c19ca66"
+    },
+    "typescript-pro": {
+      "source": "jeffallan/claude-skills",
+      "sourceType": "github",
+      "computedHash": "58d7cc8354b9714e74d27e3156b328101f2b7b95ed07bd039d701fc29230daf3"
+    }
+  }
+}
