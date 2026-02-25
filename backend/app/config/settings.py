@@ -76,6 +76,35 @@ class Config:
     TOOL_EXECUTION_TIMEOUT = int(os.getenv("TOOL_EXECUTION_TIMEOUT", "30"))
     ALLOWED_COMMANDS = os.getenv("ALLOWED_COMMANDS", "ls,cat,echo,mkdir,touch").split(",")
     
+    # Rate Limiting Settings
+    RATE_LIMIT_ENABLED = os.getenv("RATE_LIMIT_ENABLED", "true").lower() == "true"
+    RATE_LIMIT_STORAGE = os.getenv("RATE_LIMIT_STORAGE", "memory")  # memory or redis
+    REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+    
+    # Rate Limits (per user/IP)
+    MVP_CREATION_LIMIT = os.getenv("MVP_CREATION_LIMIT", "10/hour")
+    MVP_LIST_LIMIT = os.getenv("MVP_LIST_LIMIT", "100/minute")
+    MVP_GET_LIMIT = os.getenv("MVP_GET_LIMIT", "200/minute")
+    GLOBAL_API_LIMIT = os.getenv("GLOBAL_API_LIMIT", "1000/minute")
+    
+    # Concurrent Pipeline Limits
+    MAX_CONCURRENT_PIPELINES_PER_USER = int(os.getenv("MAX_CONCURRENT_PIPELINES_PER_USER", "3"))
+    MAX_CONCURRENT_PIPELINES_GLOBAL = int(os.getenv("MAX_CONCURRENT_PIPELINES_GLOBAL", "50"))
+    
+    # Metrics & Monitoring Settings
+    METRICS_ENABLED = os.getenv("METRICS_ENABLED", "true").lower() == "true"
+    METRICS_PORT = int(os.getenv("METRICS_PORT", "9090"))
+    METRICS_PATH = os.getenv("METRICS_PATH", "/metrics")
+    
+    # Health Check Settings
+    HEALTH_CHECK_ENABLED = os.getenv("HEALTH_CHECK_ENABLED", "true").lower() == "true"
+    HEALTH_CHECK_DEEP = os.getenv("HEALTH_CHECK_DEEP", "false").lower() == "true"
+    
+    # Alerting Settings
+    ALERT_COST_THRESHOLD = float(os.getenv("ALERT_COST_THRESHOLD", "100.0"))  # USD per day
+    ALERT_ERROR_RATE_THRESHOLD = float(os.getenv("ALERT_ERROR_RATE_THRESHOLD", "0.1"))  # 10%
+    ALERT_WEBHOOK_URL = os.getenv("ALERT_WEBHOOK_URL")  # Slack/Discord webhook
+    
     @classmethod
     def validate(cls) -> None:
         """Validate critical configuration."""
