@@ -9,6 +9,7 @@ from ..services.mvp_service import MVPService
 from ..schemas.mvp import MVPCreate, MVPResponse, MVPListResponse
 from ...services.pipeline import AutonomousPipeline
 from ...logger import get_logger
+from ...monitoring.metrics import mvp_created_total
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -30,6 +31,9 @@ async def start_mvp_pipeline(
     
     # Create MVP in CREATED state
     mvp = service.create_mvp(name=mvp_data.name, idea_summary=mvp_data.idea_summary)
+    
+    # Track MVP creation metric
+    mvp_created_total.inc()
     
     # Schedule pipeline execution in background
     pipeline = AutonomousPipeline(mvp.id)
