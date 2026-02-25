@@ -13,6 +13,19 @@ from ..config.settings import config
 from ..logger import get_logger
 from ..exceptions import StateTransitionError, NotFoundError, EidoException
 from .ai_runtime import AIRuntimeFacade
+from ..monitoring.metrics import (
+    mvp_created_total,
+    mvp_pipeline_active,
+    mvp_pipeline_success_total,
+    mvp_pipeline_failure_total,
+    track_mvp_pipeline_duration,
+    track_mvp_pipeline_cost,
+    track_mvp_stage_duration,
+    track_mvp_stage_cost,
+    cost_limit_exceeded_total,
+    runtime_limit_exceeded_total,
+)
+from ..monitoring.alerting import alert_cost_threshold_exceeded
 
 logger = get_logger(__name__)
 
@@ -60,6 +73,9 @@ class AutonomousPipeline:
         self._log("Starting autonomous pipeline execution with AI Runtime")
         self.pipeline_start_time = datetime.utcnow()
         
+        # Track active pipeline
+        mvp_pipeline_active.inc()
+        
         try:
             with get_session_context() as session:
                 mvp = session.get(MVP, self.mvp_id)
@@ -81,19 +97,45 @@ class AutonomousPipeline:
                 
                 # Mark as completed
                 self._transition_state(session, mvp, MVPState.COMPLETED)
+                
+                # Track success metrics
+                pipeline_duration = (datetime.utcnow() - self.pipeline_start_time).total_seconds()
+                track_mvp_pipeline_duration(pipeline_duration, "completed")
+                track_mvp_pipeline_cost(
+                    mvp.total_cost_estimate,
+                    "completed",
+                    mvp.total_token_usage
+                )
+                mvp_pipeline_success_total.inc()
+                
                 self._log("Pipeline execution completed successfully")
         
         except (CostLimitExceededError, RuntimeLimitExceededError) as e:
             self._log(f"Pipeline aborted: {str(e)}", level="error")
+            
+            # Track limit exceeded metrics
+            if isinstance(e, CostLimitExceededError):
+                cost_limit_exceeded_total.inc()
+            else:
+                runtime_limit_exceeded_total.inc()
+            
             with get_session_context() as session:
                 mvp = session.get(MVP, self.mvp_id)
                 if mvp:
                     mvp.last_error_stage = "cost_or_runtime_limit"
                     self._transition_state(session, mvp, MVPState.FAILED)
+                    
+                    # Track failure metrics
+                    pipeline_duration = (datetime.utcnow() - self.pipeline_start_time).total_seconds()
+                    track_mvp_pipeline_duration(pipeline_duration, "failed")
+                    mvp_pipeline_failure_total.labels(
+                        reason="limit_exceeded"
+                    ).inc()
             raise
         
         except Exception as e:
             self._log(f"Pipeline execution failed: {str(e)}", level="error")
+            
             with get_session_context() as session:
                 mvp = session.get(MVP, self.mvp_id)
                 if mvp and not is_terminal_state(mvp.status):
@@ -102,11 +144,21 @@ class AutonomousPipeline:
                     if mvp.retry_count >= config.MAX_AGENT_RETRIES:
                         self._log(f"Max retries ({config.MAX_AGENT_RETRIES}) exceeded, marking as FAILED")
                         self._transition_state(session, mvp, MVPState.FAILED)
+                        
+                        # Track failure metrics
+                        pipeline_duration = (datetime.utcnow() - self.pipeline_start_time).total_seconds()
+                        track_mvp_pipeline_duration(pipeline_duration, "failed")
+                        mvp_pipeline_failure_total.labels(
+                            reason="max_retries_exceeded"
+                        ).inc()
                     else:
                         self._log(f"Retry count: {mvp.retry_count}/{config.MAX_AGENT_RETRIES}")
                         session.add(mvp)
                         session.commit()
             raise
+        finally:
+            # Decrement active pipeline counter
+            mvp_pipeline_active.dec()
     
     def _transition_state(self, session: Session, mvp: MVP, new_state: MVPState) -> None:
         """Transition MVP to new state with validation."""
@@ -176,6 +228,14 @@ class AutonomousPipeline:
                 mvp.total_token_usage += stage_result.token_usage
                 mvp.total_cost_estimate += stage_result.cost_estimate
                 session.add(mvp)
+                
+                # Track stage metrics
+                track_mvp_stage_duration(stage_name, duration_ms / 1000, "completed")
+                track_mvp_stage_cost(
+                    stage_name,
+                    stage_result.cost_estimate,
+                    stage_result.token_usage
+                )
             else:
                 agent_run.status = "failed"
                 agent_run.log = stage_result.error
@@ -227,6 +287,17 @@ class AutonomousPipeline:
                 f"Cost limit exceeded: ${mvp.total_cost_estimate:.2f} >= ${mvp.max_allowed_cost:.2f}",
                 level="error"
             )
+            
+            # Send alert if threshold exceeded
+            if mvp.total_cost_estimate >= config.ALERT_COST_THRESHOLD:
+                import asyncio
+                asyncio.create_task(
+                    alert_cost_threshold_exceeded(
+                        mvp.total_cost_estimate,
+                        config.ALERT_COST_THRESHOLD
+                    )
+                )
+            
             raise CostLimitExceededError(mvp.total_cost_estimate, mvp.max_allowed_cost)
     
     def _check_runtime_limit(self) -> None:
