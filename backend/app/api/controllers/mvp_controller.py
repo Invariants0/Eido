@@ -10,6 +10,7 @@ from ..schemas.mvp import MVPCreate, MVPResponse, MVPListResponse
 from ...services.pipeline import AutonomousPipeline
 from ...logger import get_logger
 from ...monitoring.metrics import mvp_created_total
+from ...db.mock_data import MOCK_MVPS
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -54,6 +55,11 @@ def list_mvps(
     service = MVPService(session)
     mvps = service.list_mvps(skip=skip, limit=limit)
     total = service.count_mvps()
+    
+    # Fallback to mock data if DB is empty
+    if total == 0:
+        logger.info("Database empty, returning mock data for MVP list")
+        return MVPListResponse(items=MOCK_MVPS, total=len(MOCK_MVPS))
     
     return MVPListResponse(items=mvps, total=total)
 
