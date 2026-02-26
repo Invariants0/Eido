@@ -56,7 +56,7 @@ class ApiRequestError extends Error {
 
 async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
     const url = `${BASE_URL}${path}`;
-    
+
     try {
         const response = await fetch(url, {
             ...options,
@@ -69,7 +69,7 @@ async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
         // Handle non-OK responses
         if (!response.ok) {
             let errorMessage = `Request failed with status ${response.status}`;
-            
+
             try {
                 const errorData = await response.json();
                 errorMessage = errorData.detail || errorData.message || errorMessage;
@@ -77,7 +77,7 @@ async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
                 // If JSON parsing fails, use status text
                 errorMessage = response.statusText || errorMessage;
             }
-            
+
             throw new ApiRequestError(errorMessage, response.status);
         }
 
@@ -92,7 +92,7 @@ async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
         if (error instanceof ApiRequestError) {
             throw error;
         }
-        
+
         // Log the actual error for debugging
         console.error('[API] Network error:', error);
         throw new Error(`Network error. Backend unavailable. ${error instanceof Error ? error.message : ''}`);
@@ -185,7 +185,7 @@ export async function pollMVPUntilComplete(
 
     while (true) {
         const mvp = await getMVP(id);
-        
+
         // Check for terminal states
         if (mvp.status === 'deployed' || mvp.status === 'failed') {
             return mvp;
@@ -379,7 +379,7 @@ export async function getSystemStatus(): Promise<SystemStatus> {
 export async function getMVPList(): Promise<MVPListItem[]> {
     console.warn('[api] getMVPList not yet implemented - use listMVPs instead');
     const response = await listMVPs(1, 100);
-    
+
     // Map backend response to frontend format
     return response.items.map(item => ({
         id: item.id.toString(),
@@ -433,24 +433,9 @@ export async function getReflectionNotes(): Promise<ReflectionNote[]> {
 // ----------------------------------------
 
 export async function getDashboardSummary(): Promise<DashboardSummary> {
-    console.warn('[api] getDashboardSummary not yet implemented in backend');
-    const response = await listMVPs(1, 100);
-    
-    // Calculate summary from MVP list
-    const totalMvps = response.total;
-    const activeBuilds = response.items.filter(m => m.status === 'building').length;
-    const deployedMvps = response.items.filter(m => m.status === 'deployed').length;
-    const tokensCreated = response.items.filter(m => m.token_id).length;
-    
-    return {
-        totalMvps,
-        activeBuilds,
-        deployedMvps,
-        tokensCreated,
-    };
+    return apiRequest<DashboardSummary>('/api/dashboard/summary');
 }
 
 export async function getRecentActivity(): Promise<ActivityLog[]> {
-    console.warn('[api] getRecentActivity not yet implemented in backend');
-    return [];
+    return apiRequest<ActivityLog[]>('/api/dashboard/activity');
 }
