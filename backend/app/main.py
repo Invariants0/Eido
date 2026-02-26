@@ -75,6 +75,8 @@ register_exception_handlers(app)
 # Include routers
 app.include_router(health.router, tags=["health"])
 app.include_router(mvp.router, prefix="/api/mvp", tags=["mvp"])
+from .api.routes import dashboard
+app.include_router(dashboard.router, prefix="/api/dashboard", tags=["dashboard"])
 
 # Metrics endpoint
 if config.METRICS_ENABLED:
