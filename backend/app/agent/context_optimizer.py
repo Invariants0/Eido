@@ -1,9 +1,11 @@
 """Context Optimizer - Intelligent context compression using TOON."""
 
 import re
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
 from ..logger import get_logger
-from ..services.ai_runtime.toon_adapter import get_toon_adapter
+
+if TYPE_CHECKING:
+    from ..services.ai_runtime.toon_adapter import ToonAdapter
 
 logger = get_logger(__name__)
 
@@ -15,6 +17,8 @@ class ContextOptimizer:
     """
     
     def __init__(self):
+        # Lazy import to avoid circular dependency
+        from ..services.ai_runtime.toon_adapter import get_toon_adapter
         self.adapter = get_toon_adapter()
         self.total_savings: float = 0.0
         self.compression_count: int = 0
