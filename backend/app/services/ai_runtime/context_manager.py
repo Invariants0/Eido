@@ -6,6 +6,7 @@ from pathlib import Path
 from ...config.settings import config
 from ...logger import get_logger
 from ...models.mvp import MVP
+from ...agent.context_optimizer import ContextOptimizer
 
 logger = get_logger(__name__)
 
@@ -17,6 +18,7 @@ class ContextManager:
         self.mvp = mvp
         self.max_context_tokens = config.MAX_CONTEXT_TOKENS
         self.max_prompt_size = config.MAX_PROMPT_SIZE
+        self.optimizer = ContextOptimizer()
     
     def _estimate_tokens(self, text: str) -> int:
         """Estimate token count (rough approximation: ~1.3 tokens per word)."""
@@ -61,9 +63,11 @@ class ContextManager:
         if token_count > self.max_context_tokens:
             logger.warning(
                 f"Context size ({token_count} tokens) exceeds limit ({self.max_context_tokens}), "
-                f"applying compression"
+                f"applying TOON compression"
             )
-            context = self._compress_context(context)
+            # Return compressed string instead of dict
+            compressed_str = self._compress_context(context)
+            return {"compressed_context": compressed_str, "compression_applied": True}
         
         logger.info(f"Context built with ~{token_count} tokens")
         return context
@@ -135,25 +139,21 @@ class ContextManager:
             "deployment_url": self.mvp.deployment_url or "Not yet deployed",
         }
     
-    def _compress_context(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    def _compress_context(self, context: Dict[str, Any]) -> str:
         """
-        Compress context to fit within token limits.
+        Compress context to fit within token limits using TOON.
         
-        Future: Integrate with Toon for intelligent compression.
+        Returns compressed string instead of dict for better token efficiency.
         """
-        logger.info("Applying context compression")
+        logger.info("Applying TOON-based context compression")
         
-        # Simple compression: truncate long strings
-        compressed = {}
-        for key, value in context.items():
-            if isinstance(value, str) and len(value) > 500:
-                compressed[key] = value[:500] + "... [truncated]"
-            elif isinstance(value, list) and len(value) > 10:
-                compressed[key] = value[:10] + ["... [truncated]"]
-            else:
-                compressed[key] = value
+        # Use TOON optimizer for intelligent compression
+        compressed_str = self.optimizer.compress_context(
+            context,
+            max_size=self.max_prompt_size
+        )
         
-        return compressed
+        return compressed_str
     
     def build_prompt(
         self,
@@ -193,8 +193,10 @@ class ContextManager:
         return full_prompt
     
     def get_context_stats(self) -> Dict[str, Any]:
-        """Get context statistics."""
-        return {
+        """Get context statistics including TOON compression stats."""
+        stats = {
             "max_context_tokens": self.max_context_tokens,
             "max_prompt_size": self.max_prompt_size,
         }
+        stats.update(self.optimizer.get_stats())
+        return stats

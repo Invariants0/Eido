@@ -9,6 +9,7 @@ from crewai import Agent, Task, Crew, Process
 from ...config.settings import config
 from ...logger import get_logger
 from ...exceptions import EidoException
+from ...agent.context_optimizer import ContextOptimizer
 from .llm_router import LLMRouter, TaskType
 from .skill_loader import SkillLoader
 from .e2b_sandbox import E2BSandboxManager
@@ -47,6 +48,7 @@ class CrewAIService:
         self.skill_loader = SkillLoader()
         self.sandbox_manager: Optional[E2BSandboxManager] = None
         self.agents: Dict[str, Agent] = {}
+        self.context_optimizer = ContextOptimizer()
         
         # Initialize integration clients (Disabled for now)
         # self.moltbook = MoltbookPublisher()
@@ -205,6 +207,7 @@ class CrewAIService:
             max_build_retries = getattr(config, "MAX_AGENT_RETRIES", 3)
             current_attempt = 1
             current_spec = context.get('spec', 'Architecture Design')
+            last_exit_code: Optional[int] = None
             
             while current_attempt <= max_build_retries:
                 dev = self._get_agent("developer")
@@ -231,28 +234,70 @@ class CrewAIService:
                         _logging.getLogger(_name).setLevel(_logging.CRITICAL)
                         
                     result = await asyncio.to_thread(crew.kickoff)
-                    raw_str = str(result).lower()
                     
-                    # Deterministic Loop Failure Check
-                    if "error" in raw_str or "fail" in raw_str or "stderr" in raw_str:
-                        logger.warning(f"Build attempt {current_attempt} failed. Trapped stderr.")
+                    # Extract exit code from sandbox execution if available
+                    # For now, we check the result string for error indicators
+                    result_str = str(result).lower()
+                    
+                    # Try to extract actual exit code from result
+                    build_failed = False
+                    if "exit_code" in result_str:
+                        import re
+                        exit_match = re.search(r'exit_code["\s:]+(\d+)', result_str)
+                        if exit_match:
+                            last_exit_code = int(exit_match.group(1))
+                            build_failed = last_exit_code != 0
+                    else:
+                        # Fallback: check for error indicators
+                        build_failed = any(indicator in result_str for indicator in ['error', 'fail', 'stderr'])
+                        last_exit_code = 1 if build_failed else 0
+                    
+                    # Deterministic Loop: Check exit code
+                    if build_failed:
+                        logger.warning(
+                            f"Build attempt {current_attempt} failed with exit code {last_exit_code}",
+                            extra={"attempt": current_attempt, "exit_code": last_exit_code}
+                        )
+                        
                         if current_attempt < max_build_retries:
-                            from .toon_layer import TOONLayer
-                            toon_summary = TOONLayer.summarize_for_fix(str(result))
+                            # Use ContextOptimizer for TOON-based error summary
+                            retry_context = {
+                                "attempt": current_attempt,
+                                "max_retries": max_build_retries,
+                                "previous_spec": context.get('spec', 'Architecture Design')
+                            }
                             
-                            logger.info("Triggering Developer self-correction loop with TOON summary...")
+                            toon_summary = self.context_optimizer.summarize_for_fix(
+                                stderr=str(result),
+                                exit_code=last_exit_code,
+                                context=retry_context
+                            )
+                            
+                            logger.info(
+                                "Triggering Developer self-correction loop with TOON summary",
+                                extra={"attempt": current_attempt, "toon_enabled": self.context_optimizer.adapter.is_available()}
+                            )
+                            
                             current_spec = (
-                                f"PREVIOUS BUILD FAILED (Attempt {current_attempt}).\n\n"
+                                f"PREVIOUS BUILD FAILED (Attempt {current_attempt}/{max_build_retries}).\n\n"
                                 f"{toon_summary}\n\n"
-                                f"Original Spec:\n{context.get('spec', 'Architecture Design')}\n\n"
-                                f"Please FIX the files in the workspace based on the TOON summary above. Be deterministic."
+                                f"Please FIX the files in the workspace based on the error summary above. Be deterministic."
                             )
                             current_attempt += 1
                             continue
                         else:
-                            logger.error("Max build retries exceeded. Falling through to report failure.")
+                            logger.error(
+                                "Max build retries exceeded. Falling through to report failure.",
+                                extra={"attempts": current_attempt, "exit_code": last_exit_code}
+                            )
                     
-                    break # Success! Break the loop
+                    # Success! Log compression stats and break
+                    stats = self.context_optimizer.get_stats()
+                    logger.info(
+                        f"Build succeeded on attempt {current_attempt}",
+                        extra={"attempt": current_attempt, "toon_stats": stats}
+                    )
+                    break
                     
                 except Exception as e:
                     if current_attempt < max_build_retries:
