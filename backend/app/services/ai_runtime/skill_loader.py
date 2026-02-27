@@ -1,90 +1,123 @@
+import os
 import yaml
 from pathlib import Path
-from typing import Dict, Any, Optional
-from dataclasses import dataclass
+from typing import Dict, Any, Optional, List
+from dataclasses import dataclass, field
 from ...logger import get_logger
 from ...exceptions import EidoException
 
 logger = get_logger(__name__)
 
+class SkillNotFoundError(EidoException):
+    """Raised when a specific agent skill definition cannot be found."""
+    def __init__(self, role_id: str):
+        super().__init__(
+            f"Skill definition not found for role: {role_id}", 
+            code="SKILL_NOT_FOUND", 
+            status_code=404
+        )
+
 @dataclass
 class SkillProfile:
+    """Structured data for an agent skill."""
     role_id: str
     name: str
     description: str
     goal: str
-    allowed_tools: list
-    version: str
-    content_body: str
+    allowed_tools: List[str] = field(default_factory=list)
+    raw_content: str = ""
 
 class SkillLoader:
-    """Utility to load and parse agent skill definitions from SKILL.md files."""
-    
-    def __init__(self, skills_base_path: Optional[Path] = None):
-        if skills_base_path:
-            self.skills_dir = skills_base_path
+    """Loads and parses agent skill definitions from SKILL.md files."""
+
+    def __init__(self, skills_dir: Optional[str] = None):
+        if skills_dir is None:
+            # Default to the app/skills directory relative to this file
+            self.skills_dir = Path(__file__).parent.parent.parent / "skills"
         else:
-            # Default to backend/app/skills/
-            current_dir = Path(__file__).resolve().parent
-            self.skills_dir = current_dir.parent.parent / "skills"
-            
-    def load_skill(self, role_id: str) -> SkillProfile:
-        """Loads and parses a SKILL.md file for a given role_id."""
-        folder_name = role_id.replace("_", "-")
-        skill_file = self.skills_dir / folder_name / "SKILL.md"
+            self.skills_dir = Path(skills_dir)
         
-        if not skill_file.exists():
-            raise EidoException(
-                f"Skill definition not found for role '{role_id}' at {skill_file}",
-                code="SKILL_NOT_FOUND",
-                status_code=404
-            )
+        logger.info(f"SkillLoader initialized with directory: {self.skills_dir}")
+
+    def load_skill(self, role_id: str) -> SkillProfile:
+        """
+        Load and parse a specific skill into a SkillProfile dataclass.
+        
+        Args:
+            role_id: The ID of the role (matches folder name in skills/)
             
+        Returns:
+            SkillProfile object
+        """
+        # Handle social-manager vs social_manager naming inconsistencies
+        possible_dirs = [role_id, role_id.replace("_", "-"), role_id.replace("-", "_")]
+        
+        skill_file = None
+        for d in possible_dirs:
+            path = self.skills_dir / d / "SKILL.md"
+            if path.exists():
+                skill_file = path
+                break
+        
+        if not skill_file:
+            logger.warning(f"Skill file not found for role_id: {role_id}")
+            raise SkillNotFoundError(role_id)
+
         try:
-            content = skill_file.read_text(encoding="utf-8")
-        except Exception as e:
-            raise EidoException(f"Failed to read skill file {skill_file}: {e}")
-            
-        # Parse YAML frontmatter
-        meta = {}
-        body = content
-        if content.startswith("---"):
-            try:
+            with open(skill_file, "r", encoding="utf-8") as f:
+                content = f.read()
+
+            # Parse YAML frontmatter
+            frontmatter = {}
+            body = content
+            if content.startswith("---"):
                 parts = content.split("---", 2)
                 if len(parts) >= 3:
-                    meta = yaml.safe_load(parts[1]) or {}
+                    frontmatter = yaml.safe_load(parts[1])
                     body = parts[2].strip()
-            except Exception as e:
-                logger.error(f"YAML parsing failed for {role_id}: {e}")
-                
-        # Extract fields
-        name = meta.get("name", role_id).replace("-", " ").title()
-        description = meta.get("description", "Expert specialist.")
-        allowed_tools = meta.get("allowed-tools", "").split() if isinstance(meta.get("allowed-tools"), str) else meta.get("allowed-tools", [])
-        version = str(meta.get("version", "1.0"))
-        
-        # Extract goal (first section before any markdown headers)
-        goal_text = body.split("##")[0].strip()
-        if goal_text.startswith("# "):
-            lines = goal_text.split("\n", 1)
-            if len(lines) > 1:
-                goal_text = lines[1].strip()
-                
-        if not goal_text:
-            goal_text = f"Execute tasks effectively as a {name}."
+
+            # Create the profile object
+            profile = SkillProfile(
+                role_id=role_id,
+                name=frontmatter.get("name", role_id.replace("_", " ").title()),
+                description=body, # We use the body as the primary backstory/description
+                goal=frontmatter.get("description", "Contribute to the startup factory."),
+                allowed_tools=frontmatter.get("tools", []),
+                raw_content=content
+            )
             
-        return SkillProfile(
-            role_id=role_id,
-            name=name,
-            description=description,
-            goal=goal_text,
-            allowed_tools=allowed_tools,
-            version=version,
-            content_body=body
-        )
-        
-    def list_available_skills(self) -> list:
-        """Lists all available skill IDs based on folder names."""
+            # If goal (from description frontmatter) is too short or missing, we could extract it
+            if not profile.goal or profile.goal == "Contribute to the startup factory.":
+                # Fallback: take first sentence of body
+                profile.goal = body.split(".")[0] + "."
+
+            logger.info(f"Successfully loaded skill profile for {role_id}")
+            return profile
+
+        except Exception as e:
+            logger.error(f"Error parsing skill for {role_id}: {e}")
+            raise EidoException(f"Failed to parse skill {role_id}: {str(e)}")
+
+    def get_skill(self, role_id: str) -> Optional[Dict[str, Any]]:
+        """Backwards compatibility for dict-based access."""
+        try:
+            profile = self.load_skill(role_id)
+            return {
+                "role": profile.name,
+                "goal": profile.goal,
+                "backstory": profile.description,
+                "role_id": profile.role_id,
+                "tools": profile.allowed_tools
+            }
+        except:
+            return None
+
+    def list_available_skills(self) -> List[str]:
+        """List all available skill IDs."""
         if not self.skills_dir.exists():
             return []
-        return [d.name.replace("-", "_") for d in self.skills_dir.iterdir() if d.is_dir() and (d / "SKILL.md").exists()]
+        
+        return [
+            d.name for d in self.skills_dir.iterdir() 
+            if d.is_dir() and (d / "SKILL.md").exists()
+        ]
