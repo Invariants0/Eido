@@ -12,6 +12,7 @@ from ..db import get_session_context
 from ..config.settings import config
 from ..logger import get_logger
 from ..exceptions import StateTransitionError, NotFoundError, EidoException
+from ..agent.context_optimizer import ContextOptimizer
 from .ai_runtime import AIRuntimeFacade
 from ..monitoring.metrics import (
     mvp_created_total,
@@ -61,6 +62,7 @@ class AutonomousPipeline:
         self.ai_runtime = AIRuntimeFacade(mvp_id)
         self.webhook_client = EidoWebhookClient()
         self.pipeline_start_time = None
+        self.context_optimizer = ContextOptimizer()
     
     def _generate_correlation_id(self) -> str:
         """Generate unique correlation ID for request tracing."""
@@ -111,7 +113,13 @@ class AutonomousPipeline:
                 )
                 mvp_pipeline_success_total.inc()
                 
-                self._log("Pipeline execution completed successfully")
+                # Log TOON compression stats
+                toon_stats = self.context_optimizer.get_stats()
+                self._log(
+                    "Pipeline execution completed successfully",
+                    toon_compressions=toon_stats.get("total_compressions", 0),
+                    avg_savings_pct=toon_stats.get("average_savings_pct", 0.0)
+                )
         
         except (CostLimitExceededError, RuntimeLimitExceededError) as e:
             self._log(f"Pipeline aborted: {str(e)}", level="error")
@@ -238,6 +246,17 @@ class AutonomousPipeline:
                     stage_name,
                     stage_result.cost_estimate,
                     stage_result.token_usage
+                )
+                
+                # Log TOON stats for this stage
+                toon_stats = self.context_optimizer.get_stats()
+                logger.info(
+                    f"Stage {stage_name} TOON stats",
+                    extra={
+                        "stage": stage_name,
+                        "toon_compressions": toon_stats.get("total_compressions", 0),
+                        "avg_savings_pct": toon_stats.get("average_savings_pct", 0.0)
+                    }
                 )
             else:
                 agent_run.status = "failed"
