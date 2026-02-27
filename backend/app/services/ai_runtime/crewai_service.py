@@ -10,6 +10,7 @@ from ...config.settings import config
 from ...logger import get_logger
 from ...exceptions import EidoException
 from .llm_router import LLMRouter, TaskType
+from .skill_loader import SkillLoader
 from ...integrations.deployment import HereNowClient
 from ...integrations.surge import SurgeTokenManager
 
@@ -42,6 +43,7 @@ class CrewAIService:
     def __init__(self, mvp_id: int, llm_router: Optional[LLMRouter] = None):
         self.mvp_id = mvp_id
         self.router = llm_router or LLMRouter()
+        self.skill_loader = SkillLoader()
         self.agents: Dict[str, Agent] = {}
         
         # Initialize integration clients (Disabled for now)
@@ -97,79 +99,31 @@ class CrewAIService:
         if role_id in self.agents:
             return self.agents[role_id]
             
-        role_map = {
-            "analyst": {
-                "role": "Business Analyst",
-                "goal": "Translate vague ideas into structured business requirements.",
-                "backstory": "You focus on ROI, market fit, and clear user stories.",
-                "type": TaskType.IDEATION
-            },
-            "researcher": {
-                "role": "Market Researcher",
-                "goal": "Analyze market trends and competitor gaps.",
-                "backstory": "You find the unique angle that makes a startup win. You share findings on Moltbook.",
-                "type": TaskType.IDEATION,
-                "tools": self.moltbook_tools
-            },
-            "architect": {
-                "role": "System Architect",
-                "goal": "Design scalable, modular system blueprints.",
-                "backstory": "You ensure technical viability and clean API design.",
-                "type": TaskType.ARCHITECTURE
-            },
-            "tech_lead": {
-                "role": "Tech Lead",
-                "goal": "Define the technical stack and coding standards.",
-                "backstory": "You prevent technical debt and ensure build reliability.",
-                "type": TaskType.ARCHITECTURE
-            },
-            "developer": {
-                "role": "Full Stack Developer",
-                "goal": "Generate clean, production-ready code from blueprints.",
-                "backstory": "You write deterministic, bug-free code matching technical specs.",
-                "type": TaskType.BUILDING
-            },
-            "qa": {
-                "role": "QA Engineer",
-                "goal": "Identify edge cases and validate build success.",
-                "backstory": "You are meticulous and find bugs before deployment.",
-                "type": TaskType.BUILDING
-            },
-            "devops": {
-                "role": "DevOps Engineer",
-                "goal": "Containerize and deploy applications with zero downtime.",
-                "backstory": "You manage infrastructure and deployment pipelines.",
-                "type": TaskType.DEPLOYMENT
-            },
-            "blockchain": {
-                "role": "Blockchain Specialist",
-                "goal": "Ensure seamless integration with SURGE tokenization.",
-                "backstory": "You are a web3 expert focused on asset tokenization.",
-                "type": TaskType.TOKENIZATION
-            },
-            "social_manager": {
-                "role": "Social Media Manager",
-                "goal": "Engage with the Moltbook community and share project updates.",
-                "backstory": "You are a master of hype and community engagement. You know how to talk to other AI agents.",
-                "type": TaskType.IDEATION,
-                "tools": self.moltbook_tools
-            }
+        # Load skill profile dynamically
+        profile = self.skill_loader.load_skill(role_id)
+        
+        task_types = {
+            "analyst": TaskType.IDEATION,
+            "researcher": TaskType.IDEATION,
+            "social_manager": TaskType.IDEATION,
+            "architect": TaskType.ARCHITECTURE,
+            "tech_lead": TaskType.ARCHITECTURE,
+            "developer": TaskType.BUILDING,
+            "qa": TaskType.BUILDING,
+            "devops": TaskType.DEPLOYMENT,
+            "blockchain": TaskType.TOKENIZATION,
         }
         
-        config_data = role_map.get(role_id)
-        if not config_data:
-            raise EidoException(f"Unknown agent role: {role_id}")
-            
         agent = self._create_agent(
-            role=config_data["role"],
-            goal=config_data["goal"],
-            backstory=config_data["backstory"],
-            model_type=config_data["type"]
+            role=profile.name,
+            goal=profile.goal,
+            backstory=profile.description,
+            model_type=task_types.get(role_id, TaskType.IDEATION)
         )
         
-        # Add tools if specified
-        if "tools" in config_data:
-            agent.tools = config_data["tools"]
+        # Maintain existing tool bindings for now
+        if role_id in ["researcher", "social_manager"]:
+            agent.tools = self.moltbook_tools
             
         self.agents[role_id] = agent
         return agent

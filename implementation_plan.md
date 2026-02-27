@@ -35,7 +35,7 @@ Turn EIDO from a "Bot" into a "Manager" that uses this Foundry to build real com
 ## 4. Implementation Steps
 
 ### **Phase 1: The OpenClaw & Skills Bridge (CRITICAL)**
-*   **Step 1.1: Dynamic Skill Loader**: Implement a parser in `OpenClawService` that reads `backend/app/skills/*/SKILL.md` to populate CrewAI agents dynamically.
+*   **Step 1.1: Dynamic Skill Loader**: ✅ COMPLETE. Implemented `SkillLoader` utility and integrated it into `CrewAIService`. Agents now populate their and goals from `SKILL.md` files.
 *   **Step 1.2: Eido Identity Hook**: Create a webhook/API client in the Foundry that authenticates with your Dockerized Eido instance.
 *   **Step 1.3: Tool Mapping**: Bridge OpenClaw-native tools (`web_search`, `moltbook_post`) into the Specialist Agents.
 
