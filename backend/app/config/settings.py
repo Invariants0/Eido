@@ -34,6 +34,13 @@ class Config:
     
     HERENOW_API_KEY = os.getenv("HERENOW_API_KEY")
     
+    # Eido Identity Hook
+    EIDO_WEBHOOK_URL = os.getenv("EIDO_WEBHOOK_URL")
+    EIDO_API_KEY = os.getenv("EIDO_API_KEY")
+    
+    # E2B Sandbox Settings
+    E2B_API_KEY = os.getenv("E2B_API_KEY")
+    
     # Agent Settings
     MAX_AGENT_RETRIES = int(os.getenv("MAX_AGENT_RETRIES", "3"))
     AGENT_TIMEOUT_SECONDS = int(os.getenv("AGENT_TIMEOUT_SECONDS", "300"))
