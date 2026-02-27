@@ -26,6 +26,8 @@ from ..monitoring.metrics import (
     runtime_limit_exceeded_total,
 )
 from ..monitoring.alerting import alert_cost_threshold_exceeded
+from ..integrations.eido_webhook import EidoWebhookClient
+
 
 logger = get_logger(__name__)
 
@@ -57,6 +59,7 @@ class AutonomousPipeline:
         self.mvp_id = mvp_id
         self.correlation_id = correlation_id or self._generate_correlation_id()
         self.ai_runtime = AIRuntimeFacade(mvp_id)
+        self.webhook_client = EidoWebhookClient()
         self.pipeline_start_time = None
     
     def _generate_correlation_id(self) -> str:
@@ -254,10 +257,25 @@ class AutonomousPipeline:
                     tokens=stage_result.token_usage,
                     cost=stage_result.cost_estimate
                 )
+                
+                # Trigger the webhook (Step 1.2 identity hook)
+                asyncio.create_task(self.webhook_client.notify_milestone(
+                    self.mvp_id, 
+                    stage_name, 
+                    "SUCCESS", 
+                    {"duration_ms": duration_ms, "tokens": stage_result.token_usage, "cost": stage_result.cost_estimate}
+                ))
             else:
                 raise Exception(stage_result.error)
         
         except Exception as e:
+            # Trigger webhook failure mode
+            asyncio.create_task(self.webhook_client.notify_milestone(
+                self.mvp_id, 
+                stage_name, 
+                "FAILED", 
+                {"error": str(e)}
+            ))
             # Mark agent run as failed if not already updated
             if agent_run.status == "running":
                 completed_at = datetime.utcnow()
