@@ -69,6 +69,10 @@ class AIRuntimeFacade:
             extra={"mvp_id": mvp_id, "stage": stage_name}
         )
         
+        # Stages that require an E2B sandbox
+        requires_sandbox = stage_name in ["architecture", "building", "deployment"]
+        sandbox_manager = None
+        
         try:
             # Load MVP
             with get_session_context() as session:
@@ -82,6 +86,14 @@ class AIRuntimeFacade:
             # Build stage context
             context = self.context_manager.build_stage_context(stage_name)
             
+            # Initialize sandbox if needed
+            if requires_sandbox:
+                from .e2b_sandbox import E2BSandboxManager
+                sandbox_manager = E2BSandboxManager()
+                # We use it as a context manager manually since we are in an async method
+                sandbox_manager.__enter__()
+                self.crewai_service.set_sandbox_manager(sandbox_manager)
+            
             # Store input
             stage_input_json = {
                 "stage": stage_name,
@@ -91,10 +103,6 @@ class AIRuntimeFacade:
             
             # Execute crew
             crew_result = await self.crewai_service.execute_crew(stage_name, context)
-            
-            # Execute tools if needed (stub for now)
-            # In real implementation, crew would request tool execution
-            # tool_results = await self.openclaw_service.execute_tool_sequence(tools)
             
             # Get statistics
             tool_stats = self.openclaw_service.get_stats()
@@ -150,6 +158,9 @@ class AIRuntimeFacade:
                 tool_stats={},
                 error=str(e),
             )
+        finally:
+            if sandbox_manager:
+                sandbox_manager.__exit__(None, None, None)
     
     def get_runtime_stats(self) -> Dict[str, Any]:
         """Get overall runtime statistics."""

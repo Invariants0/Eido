@@ -11,6 +11,7 @@ from ...logger import get_logger
 from ...exceptions import EidoException
 from .llm_router import LLMRouter, TaskType
 from .skill_loader import SkillLoader
+from .e2b_sandbox import E2BSandboxManager
 from ...integrations.deployment import HereNowClient
 from ...integrations.surge import SurgeTokenManager
 
@@ -44,6 +45,7 @@ class CrewAIService:
         self.mvp_id = mvp_id
         self.router = llm_router or LLMRouter()
         self.skill_loader = SkillLoader()
+        self.sandbox_manager: Optional[E2BSandboxManager] = None
         self.agents: Dict[str, Agent] = {}
         
         # Initialize integration clients (Disabled for now)
@@ -54,6 +56,12 @@ class CrewAIService:
         # Tools
         self.moltbook_tools = []
         
+    def set_sandbox_manager(self, manager: E2BSandboxManager):
+        """Bind an active sandbox manager to the service."""
+        self.sandbox_manager = manager
+        # Clear agent cache to force tool re-binding if needed
+        self.agents = {}
+
     def _get_crewai_llm(self, model: str):
         """Build a CrewAI-compatible LLM object with the correct provider prefix."""
         from crewai import LLM
@@ -95,19 +103,30 @@ class CrewAIService:
         )
 
     def _get_agent(self, role_id: str) -> Agent:
-        """Agent factory for EIDO roles."""
+        """Agent factory for EIDO roles using dynamic skill loading."""
         if role_id in self.agents:
             return self.agents[role_id]
             
         # Load skill profile dynamically
-        profile = self.skill_loader.load_skill(role_id)
+        profile = self.skill_loader.get_skill(role_id)
+        
+        if not profile:
+            logger.error(f"Failed to load skill profile for role: {role_id}. Falling back to basic agent.")
+            # Basic fallback if skill is missing
+            profile = {
+                "role": role_id.replace("_", " ").title(),
+                "goal": "Contribute to the startup pipeline.",
+                "backstory": f"You are an expert {role_id} in the EIDO startup factory."
+            }
         
         task_types = {
             "analyst": TaskType.IDEATION,
             "researcher": TaskType.IDEATION,
             "social_manager": TaskType.IDEATION,
+            "social-manager": TaskType.IDEATION,
             "architect": TaskType.ARCHITECTURE,
             "tech_lead": TaskType.ARCHITECTURE,
+            "tech-lead": TaskType.ARCHITECTURE,
             "developer": TaskType.BUILDING,
             "qa": TaskType.BUILDING,
             "devops": TaskType.DEPLOYMENT,
@@ -115,15 +134,44 @@ class CrewAIService:
         }
         
         agent = self._create_agent(
-            role=profile.name,
-            goal=profile.goal,
-            backstory=profile.description,
+            role=profile["role"],
+            goal=profile["goal"],
+            backstory=profile["backstory"],
             model_type=task_types.get(role_id, TaskType.IDEATION)
         )
         
-        # Maintain existing tool bindings for now
-        if role_id in ["researcher", "social_manager"]:
-            agent.tools = self.moltbook_tools
+        # Bind tools based on role
+        from .openclaw_tools import (
+            MoltbookPostTool, 
+            TelegramNotifyTool, 
+            WebSearchTool,
+            SandboxWriteFileTool,
+            SandboxReadFileTool,
+            SandboxRunCommandTool
+        )
+        
+        tools = []
+        if role_id == "researcher":
+            tools.extend([WebSearchTool(), MoltbookPostTool()])
+        elif role_id in ["social_manager", "social-manager"]:
+            tools.extend([MoltbookPostTool(), TelegramNotifyTool()])
+        elif role_id == "developer":
+            tools.extend([
+                SandboxWriteFileTool(sandbox_manager=self.sandbox_manager),
+                SandboxReadFileTool(sandbox_manager=self.sandbox_manager),
+                SandboxRunCommandTool(sandbox_manager=self.sandbox_manager)
+            ])
+        elif role_id == "qa":
+            tools.extend([
+                SandboxReadFileTool(sandbox_manager=self.sandbox_manager),
+                SandboxRunCommandTool(sandbox_manager=self.sandbox_manager)
+            ])
+        
+        # Every agent should be able to notify the user of major blockers
+        if role_id not in ["social_manager", "social-manager"]:
+             tools.append(TelegramNotifyTool())
+             
+        agent.tools = tools
             
         self.agents[role_id] = agent
         return agent
@@ -154,13 +202,64 @@ class CrewAIService:
             ]
             
         elif stage_name == "building":
-            dev = self._get_agent("developer")
-            qa = self._get_agent("qa")
-            agents = [dev, qa]
-            tasks = [
-                Task(description=f"Generate project files based on spec: {context.get('spec', 'Architecture Design')}", agent=dev, expected_output="Source code files."),
-                Task(description="Verify build logs and run basic health checks.", agent=qa, expected_output="Build validation report.")
-            ]
+            max_build_retries = getattr(config, "MAX_AGENT_RETRIES", 3)
+            current_attempt = 1
+            current_spec = context.get('spec', 'Architecture Design')
+            
+            while current_attempt <= max_build_retries:
+                dev = self._get_agent("developer")
+                qa = self._get_agent("qa")
+                agents = [dev, qa]
+                
+                tasks = [
+                    Task(description=f"Generate project files based on spec: {current_spec}", agent=dev, expected_output="Source code files."),
+                    Task(description="Verify build logs and run basic health checks.", agent=qa, expected_output="Build validation report.")
+                ]
+                
+                crew = Crew(
+                    agents=agents,
+                    tasks=tasks,
+                    process=Process.sequential,
+                    verbose=True,
+                    memory=False
+                )
+                
+                try:
+                    import logging as _logging
+                    for _name in ["LiteLLM", "litellm", "litellm.litellm_core_utils", 
+                                  "litellm.proxy", "httpx", "httpcore"]:
+                        _logging.getLogger(_name).setLevel(_logging.CRITICAL)
+                        
+                    result = await asyncio.to_thread(crew.kickoff)
+                    raw_str = str(result).lower()
+                    
+                    # Deterministic Loop Failure Check
+                    if "error" in raw_str or "fail" in raw_str or "stderr" in raw_str:
+                        logger.warning(f"Build attempt {current_attempt} failed. Trapped stderr.")
+                        if current_attempt < max_build_retries:
+                            from .toon_layer import TOONLayer
+                            toon_summary = TOONLayer.summarize_for_fix(str(result))
+                            
+                            logger.info("Triggering Developer self-correction loop with TOON summary...")
+                            current_spec = (
+                                f"PREVIOUS BUILD FAILED (Attempt {current_attempt}).\n\n"
+                                f"{toon_summary}\n\n"
+                                f"Original Spec:\n{context.get('spec', 'Architecture Design')}\n\n"
+                                f"Please FIX the files in the workspace based on the TOON summary above. Be deterministic."
+                            )
+                            current_attempt += 1
+                            continue
+                        else:
+                            logger.error("Max build retries exceeded. Falling through to report failure.")
+                    
+                    break # Success! Break the loop
+                    
+                except Exception as e:
+                    if current_attempt < max_build_retries:
+                        logger.warning(f"Exception during build attempt {current_attempt}: {e}")
+                        current_attempt += 1
+                        continue
+                    raise StageExecutionError(stage_name, str(e))
             
         elif stage_name == "deployment":
             devops = self._get_agent("devops")
@@ -183,84 +282,81 @@ class CrewAIService:
                 model_used="stub-model"
             )
 
-        crew = Crew(
-            agents=agents,
-            tasks=tasks,
-            process=Process.sequential,
-            verbose=True,
-            memory=False  # Memory requires OpenAI embeddings - disabled to use Groq
-        )
-        
-        try:
-            # Silence litellm internal proxy warnings at runtime
-            import logging as _logging
-            for _name in ["LiteLLM", "litellm", "litellm.litellm_core_utils", 
-                          "litellm.proxy", "httpx", "httpcore"]:
-                _logging.getLogger(_name).setLevel(_logging.CRITICAL)
-            
-            # Wrap synchronous kickoff in a thread to keep the event loop responsive
-            result = await asyncio.to_thread(crew.kickoff)
-            
-            # Post-execution formatting
-            # Note: CrewAI output needs careful parsing into final JSON
-            # In stub mode or early development, result.raw might be a string.
-            output_data = {}
-            try:
-                # Attempt to extract JSON from the final agent response
-                raw_str = str(result)
-                if "{" in raw_str:
-                    import re
-                    match = re.search(r'(\{.*\})', raw_str, re.DOTALL)
-                    if match:
-                        output_data = json.loads(match.group(1))
-                    else:
-                        output_data = {"raw_output": raw_str}
-                else:
-                    output_data = {"raw_output": raw_str}
-            except:
-                output_data = {"raw_output": str(result)}
-            
-            # --- PHASE 4: EXTERNAL SERVICE INTEGRATIONS (Disabled for now) ---
-            """
-            if stage_name == "ideation" and "raw_output" not in output_data:
-                # Post the idea to Moltbook in the lablab submolt
-                title = f"MVP Idea: {output_data.get('MVP_Name', 'New Venture')}"
-                summary = str(output_data.get("Executive_Summary", "Exploring a new AI business opportunity."))
-                post_id = await self.moltbook.post(title, summary, submolt="lablab")
-                output_data["moltbook_post_id"] = post_id
-                logger.info(f"Moltbook post created: {post_id}")
-
-            elif stage_name == "deployment":
-                # Actually perform the deployment
-                mvp_name = context.get("mvp_name", f"MVP-{self.mvp_id}")
-                image = await self.deployment_client.build_image("Dockerfile", "./")
-                deploy_url = await self.deployment_client.deploy(image, mvp_name)
-                output_data["deployment_url"] = deploy_url
-                output_data["deployment_status"] = "LIVE"
-                logger.info(f"Real deployment triggered: {deploy_url}")
-
-            elif stage_name == "tokenization":
-                # Actually create the token
-                mvp_name = output_data.get("Token_Name", context.get("mvp_name", "EIDO MVP"))
-                symbol = output_data.get("Token_Symbol", "MVP")
-                token_result = await self.surge.create_token(self.mvp_id, mvp_name, symbol)
-                output_data.update(token_result)
-                logger.info(f"Real SURGE token created: {token_result.get('token_id')}")
-            """
-
-            # Construction of the result object
-            # We add a tiny delay to ensure background litellm callbacks have finished updating global stats
-            await asyncio.sleep(0.1)
-            stats = self.router.get_usage_stats()
-            
-            return CrewRunResult(
-                output_json=output_data,
-                agent_logs=[f"Agent {stage_name} completed execution"],
-                token_usage=stats.get("total_tokens_used", 0),
-                cost_estimate=stats.get("total_cost", 0.0),
-                model_used=self.router.get_model_for_task(TaskType.IDEATION if stage_name=="ideation" else TaskType.SUMMARY)
+        if stage_name != "building":
+            crew = Crew(
+                agents=agents,
+                tasks=tasks,
+                process=Process.sequential,
+                verbose=True,
+                memory=False  # Memory requires OpenAI embeddings - disabled to use Groq
             )
             
-        except Exception as e:
-            logger.error(f"Crew kickoff failed: {e}", extra={"mvp_id": self.mvp_id})
-            raise StageExecutionError(stage_name, str(e))
+            try:
+                # Silence litellm internal proxy warnings at runtime
+                import logging as _logging
+                for _name in ["LiteLLM", "litellm", "litellm.litellm_core_utils", 
+                              "litellm.proxy", "httpx", "httpcore"]:
+                    _logging.getLogger(_name).setLevel(_logging.CRITICAL)
+                
+                # Wrap synchronous kickoff in a thread to keep the event loop responsive
+                result = await asyncio.to_thread(crew.kickoff)
+            except Exception as e:
+                logger.error(f"Crew kickoff failed: {e}", extra={"mvp_id": self.mvp_id})
+                raise StageExecutionError(stage_name, str(e))
+                
+        # Post-execution formatting
+        output_data = {}
+        try:
+            raw_str = str(result)
+            if "{" in raw_str:
+                import re
+                match = re.search(r'(\{.*\})', raw_str, re.DOTALL)
+                if match:
+                    output_data = json.loads(match.group(1))
+                else:
+                    output_data = {"raw_output": raw_str}
+            else:
+                output_data = {"raw_output": raw_str}
+        except:
+            output_data = {"raw_output": str(result)}
+        
+        # --- PHASE 4: EXTERNAL SERVICE INTEGRATIONS (Disabled for now) ---
+        """
+        if stage_name == "ideation" and "raw_output" not in output_data:
+            # Post the idea to Moltbook in the lablab submolt
+            title = f"MVP Idea: {output_data.get('MVP_Name', 'New Venture')}"
+            summary = str(output_data.get("Executive_Summary", "Exploring a new AI business opportunity."))
+            post_id = await self.moltbook.post(title, summary, submolt="lablab")
+            output_data["moltbook_post_id"] = post_id
+            logger.info(f"Moltbook post created: {post_id}")
+
+        elif stage_name == "deployment":
+            # Actually perform the deployment
+            mvp_name = context.get("mvp_name", f"MVP-{self.mvp_id}")
+            image = await self.deployment_client.build_image("Dockerfile", "./")
+            deploy_url = await self.deployment_client.deploy(image, mvp_name)
+            output_data["deployment_url"] = deploy_url
+            output_data["deployment_status"] = "LIVE"
+            logger.info(f"Real deployment triggered: {deploy_url}")
+
+        elif stage_name == "tokenization":
+            # Actually create the token
+            mvp_name = output_data.get("Token_Name", context.get("mvp_name", "EIDO MVP"))
+            symbol = output_data.get("Token_Symbol", "MVP")
+            token_result = await self.surge.create_token(self.mvp_id, mvp_name, symbol)
+            output_data.update(token_result)
+            logger.info(f"Real SURGE token created: {token_result.get('token_id')}")
+        """
+
+        # Construction of the result object
+        # We add a tiny delay to ensure background litellm callbacks have finished updating global stats
+        await asyncio.sleep(0.1)
+        stats = self.router.get_usage_stats()
+        
+        return CrewRunResult(
+            output_json=output_data,
+            agent_logs=[f"Agent {stage_name} completed execution"],
+            token_usage=stats.get("total_tokens_used", 0),
+            cost_estimate=stats.get("total_cost", 0.0),
+            model_used=self.router.get_model_for_task(TaskType.IDEATION if stage_name=="ideation" else TaskType.SUMMARY)
+        )
