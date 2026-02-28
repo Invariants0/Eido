@@ -23,6 +23,7 @@ import { SandboxPreview } from '@/components/mvp/SandboxPreview';
 import { CodeViewer } from '@/components/mvp/CodeViewer';
 
 import { getMVP, triggerRetryBuild, advanceStage } from '@/lib/api';
+import { useDemoSimulation } from '@/hooks/useDemoSimulation';
 import type { MVP, OperationMode, LifecycleStage } from '@/lib/types';
 
 type RightTab = 'preview' | 'console' | 'brain' | 'code';
@@ -50,7 +51,7 @@ function RightTabBtn({ active, onClick, icon: Icon, label }: { active: boolean; 
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-all ${active ? 'border-[var(--accent-blue)] text-[var(--accent-blue)]' : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+      className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-all ${active ? 'border-primary text-primary' : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
         }`}
     >
       <Icon className="w-3.5 h-3.5" />
@@ -63,24 +64,24 @@ function ActivityCard({ stage, isLatest }: { stage: LifecycleStage; isLatest: bo
   const sc = {
     completed: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
     active: 'badge-agent',
-    pending: 'text-[var(--text-muted)] bg-white/[0.03] border-white/[0.06]',
+    pending: 'text-slate-300 bg-white/[0.06] border-white/[0.12]',
     failed: 'badge-error'
   } as const;
   return (
-    <div className={`p-3.5 rounded-xl border transition-all relative ${isLatest ? 'bg-[var(--accent-blue)]/[0.04] border-[var(--accent-blue)]/20' : 'bg-black/20 border-white/[0.06] hover:border-white/10'}`}>
-      {isLatest && <div className="absolute top-3.5 right-3.5 w-1.5 h-1.5 rounded-full bg-[var(--accent-blue)] shadow-[0_0_8px_rgba(34,211,238,0.8)]" />}
+    <div className={`p-3.5 rounded-xl border transition-all relative ${isLatest ? 'bg-primary/[0.04] border-primary/20 hover:border-primary/30' : 'bg-[var(--surface)]/60 border-white/[0.06] hover:border-white/10'}`}>
+      {isLatest && <div className="absolute top-3.5 right-3.5 w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(255,87,34,0.7)]" />}
       <div className="flex items-start gap-2.5">
-        <Github className="w-3.5 h-3.5 text-[var(--text-dim)] mt-0.5 shrink-0" />
+        <Github className="w-3.5 h-3.5 text-[var(--text-muted)] mt-0.5 shrink-0" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <h4 className="text-xs font-semibold text-[var(--text-primary)] truncate">{stage.name}</h4>
+            <h4 className="text-xs font-bold text-white truncate">{stage.name}</h4>
             <span className={`text-[9px] font-bold font-mono px-1.5 py-0.5 rounded border shrink-0 ${sc[stage.status]}`}>{stage.status.toUpperCase()}</span>
           </div>
-          <div className="text-[10px] text-[var(--text-dim)] font-mono">{stage.agentName}</div>
-          {stage.durationMs && <div className="text-[10px] text-[var(--text-dim)] font-mono mt-0.5">⏱ {(stage.durationMs / 1000).toFixed(1)}s</div>}
+          <div className="text-[11px] font-semibold text-[var(--text-secondary)] font-mono">{stage.agentName}</div>
+          {stage.durationMs && <div className="text-[11px] font-medium text-[var(--text-secondary)] font-mono mt-0.5">⏱ {(stage.durationMs / 1000).toFixed(1)}s</div>}
           <div className="flex gap-2 mt-2.5">
-            <button className="flex-1 py-1 text-[10px] font-medium text-[var(--text-muted)] hover:text-white bg-white/[0.04] hover:bg-white/[0.08] rounded-md transition-colors">Details</button>
-            <button className={`flex-1 py-1 text-[10px] font-medium rounded-md transition-colors ${isLatest ? 'text-[var(--accent-blue)] bg-[var(--accent-blue)]/10 hover:bg-[var(--accent-blue)]/20' : 'text-[var(--text-muted)] hover:text-white bg-white/[0.04] hover:bg-white/[0.08]'}`}>Logs</button>
+            <button className="flex-1 py-1.5 text-[11px] font-semibold text-[var(--text-secondary)] hover:text-white bg-white/[0.06] hover:bg-white/[0.1] rounded-md transition-colors">Details</button>
+            <button className={`flex-1 py-1.5 text-[11px] font-semibold rounded-md transition-colors ${isLatest ? 'text-primary bg-primary/10 hover:bg-primary/20' : 'text-[var(--text-secondary)] hover:text-white bg-white/[0.06] hover:bg-white/[0.1]'}`}>Logs</button>
           </div>
         </div>
       </div>
@@ -95,7 +96,10 @@ export default function MVPDetailPage() {
   const params = useParams();
   const id = (params?.id as string) ?? 'eido-001';
 
-  const [mvp, setMvp] = useState<MVP | null>(null);
+  // Demo simulation — activates when NEXT_PUBLIC_DEMO_MODE=true and id matches demo MVP ID
+  const demoSim = useDemoSimulation(id);
+
+  const [fetchedMvp, setMvp] = useState<MVP | null>(null);
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState<OperationMode>('agent');
   const [actionLoading, setActionLoading] = useState(false);
@@ -115,6 +119,11 @@ export default function MVPDetailPage() {
   const rafRef = useRef<number | null>(null);
 
   const fetchMVP = useCallback(async () => {
+    // If demo simulation is active, skip network call
+    if (demoSim?.active) {
+      setLoading(false);
+      return;
+    }
     try {
       const data = await getMVP(id);
       setMvp(data);
@@ -124,9 +133,13 @@ export default function MVPDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, demoSim?.active]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { fetchMVP(); }, [fetchMVP]);
+
+  // Keep mvp in sync with simulation state (updates every tick)
+  const activeMvp: MVP | null = demoSim?.active ? demoSim.mvp : fetchedMvp;
+  const activeLogs = demoSim?.active ? demoSim.logs : (fetchedMvp?.logs ?? []);
 
   // ── Smooth resize via rAF + direct DOM mutation ─────────────────────────
   const onDragStart = useCallback((e: React.MouseEvent) => {
@@ -171,16 +184,16 @@ export default function MVPDetailPage() {
   }, [isDragging]);
 
   const handleRetry = async () => {
-    if (!mvp) return;
+    if (!fetchedMvp) return;
     setActionLoading(true);
-    await triggerRetryBuild(mvp.id);
+    await triggerRetryBuild(fetchedMvp.id);
     setActionLoading(false);
   };
 
   const handleAdvance = async () => {
-    if (!mvp) return;
+    if (!fetchedMvp) return;
     setActionLoading(true);
-    await advanceStage(mvp.id);
+    await advanceStage(fetchedMvp.id);
     await fetchMVP();
     setActionLoading(false);
   };
@@ -188,21 +201,21 @@ export default function MVPDetailPage() {
   // ── Loading ──────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[var(--background)]">
+      <div className="flex h-screen items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 rounded-full border-2 border-[var(--agent)]/20 border-t-[var(--agent)] animate-spin" />
+          <div className="w-12 h-12 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
           <p className="text-sm font-mono text-[var(--text-secondary)]">Loading execution surface...</p>
         </div>
       </div>
     );
   }
 
-  if (!mvp) {
+  if (!activeMvp) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[var(--background)]">
+      <div className="flex h-screen items-center justify-center">
         <div className="text-center space-y-4">
           <p className="text-[var(--error)] font-mono text-sm">MVP not found: {id}</p>
-          <Link href="/dashboard" className="text-sm text-[var(--accent-blue)] hover:underline flex items-center gap-1 justify-center">
+          <Link href="/dashboard" className="text-sm text-primary/70 hover:text-primary transition-colors flex items-center gap-1 justify-center">
             <ArrowLeft className="w-3.5 h-3.5" /> Back to Dashboard
           </Link>
         </div>
@@ -210,16 +223,19 @@ export default function MVPDetailPage() {
     );
   }
 
+  // Use activeMvp everywhere below
+  const mvp = activeMvp;
+
   return (
-    <div className="flex h-screen overflow-hidden bg-[var(--background)] text-[var(--text-primary)]">
+    <div className="flex h-screen overflow-hidden text-[var(--text-primary)]">
       {/* Global nav sidebar */}
       <Sidebar />
 
       {/* Action Loading Overlay */}
       {actionLoading && (
         <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center">
-          <div className="flex items-center gap-3 px-6 py-3 bg-[var(--surface)] border border-white/10 rounded-xl shadow-2xl">
-            <Loader2 className="w-4 h-4 text-[var(--accent-blue)] animate-spin" />
+          <div className="flex items-center gap-3 px-6 py-3 bg-[var(--surface)]/90 backdrop-blur-xl border border-primary/20 rounded-xl shadow-2xl">
+            <Loader2 className="w-4 h-4 text-primary animate-spin" />
             <span className="text-sm font-mono text-[var(--text-secondary)]">Agent executing...</span>
           </div>
         </div>
@@ -242,7 +258,7 @@ export default function MVPDetailPage() {
               animate={{ width: leftWidth, opacity: 1 }}
               exit={{ width: 0, opacity: 0 }}
               transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-              className="flex-col border-r border-white/[0.06] bg-zinc-950/80 backdrop-blur-xl relative z-10 hidden md:flex overflow-hidden"
+              className="flex-col border-r border-white/[0.08] bg-[var(--surface-elevated)]/80 backdrop-blur-2xl relative z-10 hidden md:flex overflow-hidden"
               style={{ width: leftWidth, minWidth: leftWidth, maxWidth: leftWidth }}
             >
               {/* Panel Header */}
@@ -273,7 +289,7 @@ export default function MVPDetailPage() {
               </div>
 
               {/* Left Tabs */}
-              <div className="flex gap-0.5 mx-3 my-2 bg-black/40 rounded-lg p-1 shrink-0">
+              <div className="flex gap-0.5 mx-3 my-2 bg-[var(--surface)]/60 border border-white/[0.05] rounded-lg p-1 shrink-0">
                 <LeftTabBtn active={leftTab === 'activity'} onClick={() => setLeftTab('activity')} icon={GitCommit} label="Activity" />
                 <LeftTabBtn active={leftTab === 'specs'} onClick={() => setLeftTab('specs')} icon={Database} label="Specs" />
                 <LeftTabBtn active={leftTab === 'info'} onClick={() => setLeftTab('info')} icon={MessageSquare} label="Cards" />
@@ -291,11 +307,11 @@ export default function MVPDetailPage() {
                   )}
                   {leftTab === 'specs' && (
                     <motion.div key="specs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3 pt-1">
-                      <div className="p-3.5 rounded-xl bg-black/30 border border-white/[0.06]">
+                      <div className="p-3.5 rounded-xl bg-[var(--surface)]/60 border border-white/[0.06] hover:border-primary/15 transition-colors">
                         <div className="text-[10px] font-mono text-[var(--text-muted)] uppercase mb-2">Idea</div>
                         <p className="text-xs text-[var(--text-secondary)] leading-relaxed">{mvp.ideaSummary}</p>
                       </div>
-                      <div className="p-3.5 rounded-xl bg-black/30 border border-white/[0.06]">
+                      <div className="p-3.5 rounded-xl bg-[var(--surface)]/60 border border-white/[0.06] hover:border-primary/15 transition-colors">
                         <div className="text-[10px] font-mono text-[var(--text-muted)] uppercase mb-2">Tech Stack</div>
                         <div className="flex flex-wrap gap-1.5">
                           {mvp.techStack.map((t) => (
@@ -303,7 +319,7 @@ export default function MVPDetailPage() {
                           ))}
                         </div>
                       </div>
-                      <div className="p-3.5 rounded-xl bg-black/30 border border-white/[0.06] space-y-2">
+                      <div className="p-3.5 rounded-xl bg-[var(--surface)]/60 border border-white/[0.06] hover:border-primary/15 transition-colors space-y-2">
                         <div className="text-[10px] font-mono text-[var(--text-muted)] uppercase">Deployment</div>
                         {[
                           ['Platform', mvp.deployment.platform],
@@ -330,11 +346,11 @@ export default function MVPDetailPage() {
               </div>
 
               {/* ── Chat Input ── */}
-              <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-zinc-950 via-zinc-950/95 to-transparent pt-8 shrink-0">
+              <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-[var(--surface-elevated)] via-[var(--surface-elevated)]/90 to-transparent pt-8 shrink-0">
                 {/* Mode toggle + actions */}
                 <div className="flex items-center gap-2 mb-2 px-0.5">
                   <div className="flex items-center gap-0.5 bg-black/40 border border-white/[0.06] rounded-lg p-0.5">
-                    <button onClick={() => setMode('agent')} className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-all ${mode === 'agent' ? 'bg-[var(--accent-blue)] text-white shadow-[0_0_10px_rgba(59,130,246,0.3)]' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'}`}>
+                    <button onClick={() => setMode('agent')} className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-all ${mode === 'agent' ? 'bg-primary/20 border border-primary/40 text-primary shadow-[0_0_10px_rgba(255,87,34,0.2)]' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'}`}>
                       <Bot className="w-3 h-3" /> Agent
                     </button>
                     <button onClick={() => setMode('human')} className={`flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-all ${mode === 'human' ? 'bg-white/10 text-white border border-white/10' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'}`}>
@@ -351,7 +367,7 @@ export default function MVPDetailPage() {
                       <button onClick={handleRetry} className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium text-white bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.06] rounded-md transition-colors">
                         <RefreshCw className="w-3 h-3" /> Retry
                       </button>
-                      <button onClick={handleAdvance} className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium text-white bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/80 rounded-md transition-colors">
+                      <button onClick={handleAdvance} className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium text-white bg-primary hover:bg-primary/80 rounded-md transition-colors">
                         Advance <ChevronRight className="w-3 h-3" />
                       </button>
                     </div>
@@ -359,7 +375,7 @@ export default function MVPDetailPage() {
                 </div>
 
                 {/* Prompt box */}
-                <div className="bg-[var(--surface)] border border-white/[0.08] rounded-xl overflow-hidden focus-within:border-[var(--accent-blue)]/30 transition-colors shadow-xl">
+                <div className="bg-[var(--surface)]/80 backdrop-blur-xl border border-white/[0.08] rounded-xl overflow-hidden focus-within:border-primary/30 transition-colors shadow-xl">
                   <textarea
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
@@ -375,7 +391,7 @@ export default function MVPDetailPage() {
                         <Sparkles className="w-3 h-3" /> Visual edits
                       </button>
                     </div>
-                    <button className="w-7 h-7 rounded-full bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/80 flex items-center justify-center transition-colors text-black shadow-lg">
+                    <button className="w-7 h-7 rounded-full bg-primary hover:bg-primary/80 flex items-center justify-center transition-colors text-white shadow-lg shadow-primary/20">
                       <ArrowUp className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -389,10 +405,10 @@ export default function MVPDetailPage() {
         {leftPanelOpen && (
           <div
             onMouseDown={onDragStart}
-            className={`hidden md:flex w-[5px] cursor-col-resize items-center justify-center shrink-0 group relative z-20 hover:w-[6px] transition-all ${isDragging ? 'bg-[var(--accent-blue)]/30' : 'hover:bg-[var(--accent-blue)]/10'}`}
+            className={`hidden md:flex w-[5px] cursor-col-resize items-center justify-center shrink-0 group relative z-20 hover:w-[6px] transition-all ${isDragging ? 'bg-primary/20' : 'hover:bg-primary/10'}`}
           >
-            <div className={`w-[3px] h-12 rounded-full transition-all ${isDragging ? 'bg-[var(--accent-blue)] shadow-[0_0_8px_rgba(34,211,238,0.6)]' : 'bg-white/[0.08] group-hover:bg-[var(--accent-blue)]/50'}`} />
-            <GripVertical className="absolute w-3 h-3 text-[var(--text-muted)] group-hover:text-[var(--accent-blue)] opacity-0 group-hover:opacity-100 transition-all" />
+            <div className={`w-[3px] h-12 rounded-full transition-all ${isDragging ? 'bg-primary shadow-[0_0_8px_rgba(255,87,34,0.5)]' : 'bg-white/[0.08] group-hover:bg-primary/50'}`} />
+            <GripVertical className="absolute w-3 h-3 text-[var(--text-muted)] group-hover:text-primary opacity-0 group-hover:opacity-100 transition-all" />
           </div>
         )}
 
@@ -400,7 +416,7 @@ export default function MVPDetailPage() {
         <div className="flex-1 flex flex-col overflow-hidden min-w-0">
 
           {/* Right Tab Bar */}
-          <div className="h-10 flex items-end border-b border-white/[0.06] bg-[var(--surface)]/60 backdrop-blur-sm px-2 shrink-0">
+          <div className="h-10 flex items-end border-b border-white/[0.06] bg-[var(--surface-elevated)]/60 backdrop-blur-xl px-2 shrink-0">
             {/* Toggle left panel */}
             <button
               onClick={() => setLeftPanelOpen((p) => !p)}
@@ -419,7 +435,7 @@ export default function MVPDetailPage() {
 
             <div className="ml-auto flex items-center gap-2 pb-1">
               <a href={mvp.deployment.url} target="_blank" rel="noopener noreferrer"
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-md text-[11px] font-medium text-[var(--accent-blue)] bg-[var(--accent-blue)]/10 hover:bg-[var(--accent-blue)]/20 border border-[var(--accent-blue)]/20 transition-colors">
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-md text-[11px] font-medium text-[var(--success)] bg-[var(--success)]/10 hover:bg-[var(--success)]/20 border border-[var(--success)]/20 transition-colors shadow-[0_0_8px_rgba(16,185,129,0.12)]">
                 <Zap className="w-3 h-3" /> Publish
               </a>
             </div>
@@ -435,7 +451,7 @@ export default function MVPDetailPage() {
               )}
               {rightTab === 'console' && (
                 <motion.div key="console" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }} className="h-full p-4">
-                  <ExecutionConsole logs={mvp.logs} isStreaming={mode === 'agent'} />
+                  <ExecutionConsole logs={activeLogs} isStreaming={mode === 'agent' || (demoSim?.active === true && !demoSim.isComplete)} />
                 </motion.div>
               )}
               {rightTab === 'brain' && (
