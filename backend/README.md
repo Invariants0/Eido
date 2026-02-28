@@ -1,25 +1,33 @@
 # EIDO Backend
 
-This directory contains the FastAPI service powering the EIDO autonomous startup factory.
+FastAPI service powering the EIDO autonomous startup pipeline.
 
-## Getting Started
+## Setup
 
-1. Install Python 3.11+
-2. Install Poetry: `pip install poetry`
-3. Install dependencies:
-   ```bash
-   cd backend
-   poetry install
-   ```
-4. Copy `.env.example` to `.env` and configure:
-   ```bash
-   cp .env.example .env
-   # Edit .env with your API keys
-   ```
-5. Run the development server:
-   ```bash
-   poetry run uvicorn app.main:app --reload --port 8000
-   ```
+```bash
+uv sync                  # creates .venv and installs all deps
+cp .env.example .env     # then add your API keys
+uv run python start.py
+# → http://localhost:8000
+# → http://localhost:8000/docs
+```
+
+## Key env vars
+
+| Variable | Required | Purpose |
+|----------|----------|---------|
+| `GROQ_API_KEY` | ✅ | LLM inference |
+| `SURGE_API_KEY` | optional | Token launch on Base |
+| `MOLTBOOK_API_KEY` | optional | Social publishing |
+| `E2B_API_KEY` | optional | Code sandbox |
+
+See `app/config/settings.py` for the full list.
+
+## Stack
+
+- FastAPI · SQLModel · Pydantic v2
+- CrewAI · LiteLLM (Groq)
+- slowapi · Prometheus · Loguru
 
 The service currently exposes:
 - `GET /` health/status

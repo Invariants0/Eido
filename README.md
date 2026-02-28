@@ -1,265 +1,246 @@
-# Eido — Autonomous Startup Factory
+<div align="center">
 
-EIDO is an autonomous startup factory built for the **SURGE × OpenClaw Hackathon**.
+# EIDO — Autonomous Startup Foundry
 
-It discovers problems, builds MVPs, deploys them, tokenizes ownership via SURGE, and posts updates to Moltbook—all autonomously.
+**An AI agent that discovers problems, builds MVPs, deploys them to the web, tokenizes ownership on Base, and announces each launch to Moltbook — fully autonomously.**
 
----
+Built for the **SURGE × OpenClaw Hackathon 2026** · lablab.ai
 
-## 📊 Current Status
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.101+-009688.svg)](https://fastapi.tiangolo.com)
+[![Next.js 16](https://img.shields.io/badge/Next.js-16-black.svg)](https://nextjs.org)
+[![CrewAI](https://img.shields.io/badge/CrewAI-0.28+-orange.svg)](https://crewai.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-### ✅ Implemented
-- **Frontend**: Next.js 15 UI prototype with mock data (dashboard, MVP detail, agent brain, tokens, settings)
-- **Backend**: Production-grade FastAPI scaffold with full folder structure
-  - Structured logging (JSON)
-  - Exception handling (centralized)
-  - Environment configuration (.env support)
-  - Pydantic schemas (MVPCreate, MVPUpdate, TokenCreate, AgentRunCreate, etc.)
-  - Database models (MVP, Token, AgentRun) using SQLModel
-  - Skill templates for agents (manager, ideation, architecture, builder, devops, business, feedback)
-  - Integration stubs (SURGE tokenization, Moltbook publishing, here.now deployment)
-
-### 🟡 In Progress
-- API route implementations (controllers + services layer)
-- Repository layer (data access objects)
-- Agent orchestration logic (CrewAI integration)
-- Memory store (execution logs + state tracking)
-
-### 🔴 Planned
-- Frontend API integration (replace mock data)
-- Agent pipeline execution (idea → build → deploy → tokenize → post)
-- Self-healing build loop (error detection + retry)
-- Real OpenClaw, SURGE, Moltbook integrations (with credentials)
-- Database migrations (Alembic)
-- Testing suite (pytest)
+</div>
 
 ---
 
-## 🏗️ Architecture Overview
+## What is EIDO?
 
-### Backend Structure
-
-```
-backend/
-├── app/
-│   ├── main.py                      # FastAPI entrypoint
-│   ├── logging.py                   # JSON structured logging
-│   ├── exceptions.py                # Custom error classes
-│   ├── config/
-│   │   └── settings.py              # 12-factor config (.env)
-│   ├── api/
-│   │   ├── routes/                  # HTTP endpoints
-│   │   │   ├── health.py
-│   │   │   ├── mvp.py
-│   │   │   ├── agent_routes.py
-│   │   │   ├── token_routes.py
-│   │   │   └── deploy_routes.py
-│   │   ├── controllers/             # Request handlers (stubs)
-│   │   ├── services/                # Business logic (stubs)
-│   │   ├── schemas/                 # Pydantic API models
-│   │   │   ├── mvp.py
-│   │   │   ├── token.py
-│   │   │   └── agent.py
-│   │   └── middleware/              # CORS, error handlers
-│   ├── models/                      # SQLModel DB tables
-│   │   ├── mvp.py
-│   │   ├── token.py
-│   │   └── agent_run.py
-│   ├── repositories/                # Data access layer (DAO)
-│   ├── agent/                       # Orchestration & agent logic
-│   ├── integrations/                # External APIs
-│   │   ├── surge.py                 # SURGE tokenization
-│   │   ├── moltbook.py              # Moltbook publishing
-│   │   └── deployment.py            # here.now deployment
-│   ├── utils/                       # Validators, decorators
-│   ├── db/                          # Database connection
-│   ├── memory/                      # Agent state + execution logs
-│   └── skills/                      # OpenClaw skill definitions (SKILL.md templates)
-```
-
-### Frontend Structure
+EIDO is a **multi-agent pipeline** that turns a raw idea into a live product in minutes:
 
 ```
-frontend/
-├── app/
-│   ├── layout.tsx                   # Global layout + navigation
-│   ├── page.tsx                     # Dashboard home
-│   ├── mvp/
-│   │   ├── page.tsx                 # MVP list (mock data)
-│   │   └── [id]/page.tsx            # MVP detail workspace
-│   ├── brain/
-│   │   └── page.tsx                 # Agent memory timeline (mock)
-│   ├── tokens/
-│   │   └── page.tsx                 # Token cards (mock data)
-│   ├── settings/
-│   │   └── page.tsx                 # Settings & controls
-│   └── globals.css                  # Tailwind theme
-├── components/
-│   ├── sidebar.tsx                  # Navigation
-│   └── dashboard-content.tsx        # Dashboard widgets
-├── hooks/
-│   └── use-mobile.ts                # Responsive breakpoint
-└── lib/
-    └── utils.ts                     # Tailwind cn() utility
+Idea → Ideation → Architecture → Build → Deploy → Tokenize → Publish
 ```
+
+Each stage is handled by a dedicated AI crew (powered by Groq LLMs via LiteLLM), with real-time progress streaming to a Next.js dashboard over SSE. Completed MVPs are:
+
+- **Deployed** as live web apps via HereNow / E2B sandbox
+- **Tokenized** on Base blockchain via [SURGE OpenClaw](https://surge.xyz)
+- **Announced** to the AI-agent social network [Moltbook](https://moltbook.com)
 
 ---
 
-## 🚀 Local Development Setup
+## Pipeline Stages
 
-### Prerequisites
-- Node.js 18+ (frontend)
-- Python 3.11+ (backend)
-- bun (frontend package manager)
-- Poetry (Python dependency manager)
+| # | Stage | Agent Crew | Output |
+|---|-------|-----------|--------|
+| 1 | **Ideation** | `researcher` + `analyst` | Market analysis, MVP concept, tech stack recommendation |
+| 2 | **Architecture** | `architect` + `tech_lead` | System design, data models, OpenAPI spec |
+| 3 | **Build** | `developer` + `qa` | Working codebase generated in E2B sandbox |
+| 4 | **Deploy** | `devops` | Live HTTPS URL (HereNow / E2B) |
+| 5 | **Tokenize** | `blockchain` | ERC-20 token on Base via SURGE OpenClaw |
+| 6 | **Publish** | `social_manager` | Moltbook post in the `lablab` submolt |
+
+---
+
+## Tech Stack
+
+### Backend
+| Layer | Technology |
+|-------|-----------|
+| API server | FastAPI 0.101+ |
+| ORM | SQLModel + SQLite (dev) |
+| Validation | Pydantic v2 |
+| Agent orchestration | CrewAI 0.28+ |
+| LLM routing | LiteLLM + Groq |
+| Context compression | TOON Format |
+| Code sandbox | E2B Code Interpreter |
+| Metrics | Prometheus + custom counters |
+| Rate limiting | slowapi |
+| Logging | Loguru (structured JSON) |
 
 ### Frontend
+| Layer | Technology |
+|-------|-----------|
+| Framework | Next.js 16 (App Router) |
+| UI | React 19 + Tailwind CSS v4 |
+| Animations | Motion (Framer) |
+| HTTP | Axios |
+| Live updates | Native `EventSource` (SSE) |
+| 3D visuals | Three.js |
+
+### External Services
+| Service | Purpose |
+|---------|---------|
+| [Groq](https://groq.com) | LLM inference (llama-3.3, llama-3.1, gemma2) |
+| [SURGE OpenClaw](https://surge.xyz) | ERC-20 token launch on Base |
+| [Moltbook](https://moltbook.com) | AI-agent social network publishing |
+| [HereNow](https://herenow.dev) | Deployment target |
+| [E2B](https://e2b.dev) | Sandboxed code execution |
+
+---
+
+## Quick Start
+
+### Prerequisites
+- **Python 3.11+** and [uv](https://github.com/astral-sh/uv) (or pip)
+- **Node.js 18+** and `bun`
+- API keys for Groq (required), SURGE, Moltbook (optional for demo)
+
+### 1. Backend
+
+```bash
+cd backend
+
+# Create virtualenv and install
+uv venv .venv
+.venv/Scripts/activate      # Windows
+# source .venv/bin/activate  # macOS/Linux
+
+pip install -e ".[dev]"
+
+# Configure environment
+cp .env.example .env
+# Edit .env — at minimum set GROQ_API_KEY
+
+# Start server
+python start.py
+# → http://localhost:8000
+# → http://localhost:8000/docs  (Swagger UI)
+```
+
+### 2. Frontend
 
 ```bash
 cd frontend
 bun install
 bun run dev
+# → http://localhost:3000
 ```
 
-Runs on `http://localhost:3000`
+### 3. Run a pipeline
 
-### Backend
+```bash
+# POST a new MVP idea
+curl -X POST http://localhost:8000/api/mvp/start \
+  -H "Content-Type: application/json" \
+  -d '{"name": "AI Invoice Tracker", "idea_summary": "SaaS that auto-extracts and reconciles invoices for freelancers"}'
+
+# Watch live pipeline logs (SSE)
+curl -N http://localhost:8000/api/mvp/1/events
+```
+
+### 4. Demo mode (no backend required)
+
+Set `NEXT_PUBLIC_DEMO_MODE=true` and `NEXT_PUBLIC_DEMO_MVP_ID=eido-001` in `frontend/.env.local`, then open `/mvp/eido-001` — plays a scripted simulation of the full pipeline.
+
+---
+
+## Environment Variables
+
+Create `backend/.env` from the table below. Only `GROQ_API_KEY` is required to run the pipeline in development.
+
+### LLM / AI
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `GROQ_API_KEY` | — | **Required.** Groq inference API |
+| `OPENAI_API_KEY` | — | Fallback / GPT-4 |
+| `DEFAULT_LLM_MODEL` | `llama-3.1-8b-instant` | Fallback model |
+| `IDEATION_LLM_MODEL` | `llama-3.1-8b-instant` | Researcher + analyst |
+| `ARCHITECTURE_LLM_MODEL` | `llama-3.1-70b-versatile` | Architect + tech lead |
+| `BUILDING_LLM_MODEL` | `llama-3.3-70b-versatile` | Developer |
+| `DEPLOYMENT_LLM_MODEL` | `gemma2-9b-it` | DevOps |
+| `BLOCKCHAIN_LLM_MODEL` | `llama-3.3-70b-versatile` | Blockchain |
+
+### External Services
+
+| Variable | Purpose |
+|----------|---------|
+| `SURGE_API_KEY` | SURGE OpenClaw token launch on Base |
+| `MOLTBOOK_API_KEY` | Post to Moltbook social network |
+| `E2B_API_KEY` | E2B sandbox code execution |
+| `HERENOW_API_KEY` | HereNow deployment |
+| `EIDO_WEBHOOK_URL` | Identity/progress webhook URL |
+| `EIDO_API_KEY` | Webhook auth key |
+
+### Application
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `ENVIRONMENT` | `development` | Runtime mode |
+| `DATABASE_URL` | `sqlite:///./eido.db` | DB connection string |
+| `MAX_STAGE_RETRIES` | `2` | Retries per pipeline stage |
+| `MAX_TOTAL_COST` | `10.0` | Hard cost cap in USD |
+| `MAX_TOTAL_RUNTIME` | `3600` | Hard time cap in seconds |
+| `RATE_LIMIT_ENABLED` | `true` | Toggle API rate limiting |
+| `METRICS_ENABLED` | `true` | Toggle Prometheus export |
+| `LOG_LEVEL` | `INFO` | Loguru log level |
+
+---
+
+## API Reference
+
+```
+GET  /                          Health / version info
+GET  /health                    Simple health check
+GET  /health/deep               Deep check (DB, LLM, integrations)
+GET  /metrics                   Prometheus metrics
+
+POST /api/mvp/start             Launch full pipeline  { name, idea_summary }
+GET  /api/mvp/list              List all MVPs
+GET  /api/mvp/{id}              MVP detail + stage outputs
+GET  /api/mvp/{id}/events       SSE stream — real-time pipeline logs
+GET  /api/mvp/{id}/status       Current stage + progress %
+
+GET  /api/token/list            All tokens
+GET  /api/token/{mvp_id}        Token for a specific MVP
+
+POST /api/agent/run             Manually trigger pipeline
+GET  /api/agent/status          Agent status
+GET  /api/agent/logs            Execution log tail
+
+GET  /api/dashboard/stats       Aggregate metrics for dashboard
+```
+
+Interactive API docs at `/docs` (Swagger UI) and `/redoc`.
+
+---
+
+## Running Tests
 
 ```bash
 cd backend
-poetry install
-cp .env.example .env
-# Edit .env with your API keys (optional for development)
-poetry run uvicorn app.main:app --reload --port 8000
-```
+# Quick smoke test — Moltbook + SURGE (no LLM calls)
+python tests/test_integrations_direct.py
 
-Runs on `http://localhost:8000`  
-Docs available at `http://localhost:8000/docs`
+# Full pipeline test (requires LLM API keys, ~5 min)
+python tests/test_phase2_full.py
 
----
-
-## 📋 API Endpoints (Planned)
-
-### MVP Management
-- `GET /api/mvp/list` — List all MVPs
-- `GET /api/mvp/{id}` — Get MVP details
-- `POST /api/mvp/start` — Trigger full pipeline
-- `DELETE /api/mvp/{id}` — Delete MVP
-
-### Agent Control
-- `POST /api/agent/run` — Manually trigger pipeline
-- `GET /api/agent/status` — Get current stage & progress
-- `GET /api/agent/logs` — Fetch execution logs
-
-### Token Management
-- `POST /api/token/create` — Create SURGE token
-- `GET /api/token/{mvp_id}` — Get token details
-
-### Deployment
-- `POST /api/deploy/{mvp_id}` — Deploy MVP
-- `GET /api/deploy/status/{mvp_id}` — Check deployment status
-
-### Health
-- `GET /health` — Service health check
-- `GET /` — Status endpoint
-
----
-
-## 🔧 Development Workflow
-
-### Adding a Backend Endpoint
-
-1. Create schema in `app/api/schemas/`
-2. Create route in `app/api/routes/`
-3. Create service in `app/api/services/` (business logic)
-4. Create controller in `app/api/controllers/` (request handler)
-5. Maybe create repository in `app/repositories/` (DB access)
-6. Register router in `app/main.py`
-
-### Environment Variables
-
-Copy `.env.example` to `.env` and configure:
-
-```bash
-# Critical
-DATABASE_URL=sqlite:///./eido.db
-ENVIRONMENT=development
-
-# External services (optional for development)
-SURGE_API_KEY=your_key_here
-SURGE_TESTNET=true
-MOLTBOOK_API_KEY=your_key_here
-HERENOW_API_KEY=your_key_here
-
-# Agent settings
-MAX_AGENT_RETRIES=3
-AGENT_TIMEOUT_SECONDS=300
+# Rate limiting + monitoring
+python tests/test_rate_limiting_and_monitoring.py
 ```
 
 ---
 
-## 📚 Documentation
+## Contributing
 
-All planning and specification documents are in `docs/`:
-
-- **Eido-idea.md** — Product vision and features
-- **eido-prd.md** — Final hackathon PRD and architecture
-- **eido-tech-spec.md** — Complete technical specification
-- **eido-integration.md** — Integration strategy (what's real vs. pattern)
-- **hackathon-strategy.md** — Prize targeting and winning plan
-- **codebase-index.md** — Project status and gaps
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feat/my-feature`)
+3. Commit your changes (`git commit -m 'feat: add my feature'`)
+4. Push to the branch (`git push origin feat/my-feature`)
+5. Open a Pull Request
 
 ---
 
-## 🎯 Immediate Next Steps
+## License
 
-1. **Flesh out repositories** (MVP, Token, AgentRun DAOs)
-2. **Implement service layer logic** (business logic for MVP lifecycle)
-3. **Wire frontend to backend** (replace mock data with API calls)
-4. **Build agent orchestrator** (CrewAI pipeline setup)
-5. **Test integrations** (SURGE, Moltbook, here.now stubs → real calls)
-6. **Self-healing build loop** (Docker build + error detection + retry)
+[MIT](LICENSE)
 
 ---
 
-## 📦 Technology Stack
-
-### Frontend
-- Next.js 15 (App Router)
-- React 19
-- TypeScript
-- Tailwind CSS v4
-- shadcn/ui components
-
-### Backend
-- FastAPI (Python 3.11+)
-- SQLModel (ORM)
-- Pydantic V2 (validation)
-- CrewAI (agent orchestration)
-- Python-dotenv (config)
-
-### Infrastructure
-- Docker (containerization)
-- SQLite (development)
-- here.now (deployment target)
-
-### External Services
-- OpenClaw (agent runtime)
-- SURGE (tokenization)
-- Moltbook (publishing)
-- Toon (token optimization)
-
----
-
-## 🤝 How to Contribute
-
-1. Refer to `backend/README.md` and `frontend/README.md` for setup
-2. Create a feature branch
-3. Implement changes following the folder structure
-4. Test locally
-5. Open a PR
-
----
-
-**Status**: Hackathon MVP in progress. Core infrastructure in place. Logic layer in development.
-
+<div align="center">
+Built with ❤️ for the <strong>SURGE × OpenClaw Hackathon 2026</strong> on lablab.ai
+</div>
