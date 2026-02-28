@@ -22,6 +22,12 @@ async def lifespan(app: FastAPI):
     """Application lifespan manager for startup and shutdown."""
     # Startup
     logger.info("Starting EIDO backend")
+    
+    # Register main loop with SSE manager for thread-safe logging
+    import asyncio
+    from .services.sse_service import sse_manager
+    sse_manager.set_loop(asyncio.get_running_loop())
+    
     logger.info(f"Environment: {config.ENVIRONMENT}")
     logger.info(f"Rate limiting: {'enabled' if config.RATE_LIMIT_ENABLED else 'disabled'}")
     logger.info(f"Metrics: {'enabled' if config.METRICS_ENABLED else 'disabled'}")

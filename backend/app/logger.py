@@ -43,11 +43,46 @@ class InterceptHandler(logging.Handler):
 
         logger.bind(name=logger_name).opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
 
+# Sink for real-time events to SSE
+def sse_sink(message):
+    """Broadcasts log messages to SSE subscribers if mvp_id is present."""
+    record = message.record
+    mvp_id = record["extra"].get("mvp_id")
+    
+    if mvp_id:
+        try:
+            import asyncio
+            from app.services.sse_service import sse_manager
+            
+            event_data = {
+                "message": record["message"],
+                "level": record["level"].name,
+                "logger": record["name"],
+                "stage": record["extra"].get("stage")
+            }
+            
+            async def run_broadcast():
+                await sse_manager.broadcast(mvp_id, "log", event_data)
+            
+            if sse_manager.app_loop:
+                asyncio.run_coroutine_threadsafe(run_broadcast(), sse_manager.app_loop)
+            else:
+                try:
+                    loop = asyncio.get_running_loop()
+                    loop.create_task(run_broadcast())
+                except RuntimeError:
+                    pass
+        except Exception:
+            pass
+
 def configure_logging(log_level: str = "INFO") -> None:
     """Configure Loguru with environment-appropriate formatting."""
     
     # Remove all existing handlers (including uvicorn's defaults)
     logger.remove()
+    
+    # Add SSE sink
+    logger.add(sse_sink, level="INFO")
     
     # Global logger configuration (patching for 'name' support)
     logger.configure(patcher=lambda record: record.update(name=record["extra"].get("name", record["name"])))
