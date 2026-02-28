@@ -63,8 +63,10 @@ function TokenCard({ token, index }: { token: TokenListItem; index: number }) {
                 initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.25, delay: index * 0.05 }}
-                className="group bg-[var(--surface)] border border-white/[0.06] rounded-xl p-5 hover:border-white/[0.12] transition-all cursor-pointer relative overflow-hidden"
+                className="group bg-[var(--surface)]/80 backdrop-blur-xl border border-white/[0.06] rounded-2xl p-5 hover:border-primary/20 hover:shadow-(--glow-primary) transition-all cursor-pointer relative overflow-hidden"
             >
+                {/* Top-edge orange accent */}
+                <div className="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                 {/* Glow */}
                 {token.status === 'active' && (
                     <div className="absolute top-0 right-0 w-32 h-32 -mr-12 -mt-12 bg-[var(--accent-blue)]/[0.03] rounded-full blur-2xl group-hover:bg-[var(--accent-blue)]/[0.07] transition-colors" />
@@ -165,11 +167,11 @@ export default function TokenListPage() {
 
     if (loading) {
         return (
-            <div className="flex min-h-screen bg-[var(--background)]">
+            <div className="flex min-h-screen">
                 <Sidebar />
                 <div className="flex-1 flex items-center justify-center">
                     <div className="flex flex-col items-center gap-4">
-                        <div className="w-12 h-12 rounded-full border-2 border-[var(--agent)]/20 border-t-[var(--agent)] animate-spin" />
+                        <div className="w-12 h-12 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
                         <p className="text-sm font-mono text-[var(--text-secondary)]">Loading tokens...</p>
                     </div>
                 </div>
@@ -181,7 +183,7 @@ export default function TokenListPage() {
     const totalMcap = tokens.reduce((s, t) => s + (t.price * t.totalSupply), 0);
 
     return (
-        <div className="flex min-h-screen bg-[var(--background)] text-[var(--text-primary)]">
+        <div className="flex min-h-screen text-[var(--text-primary)]">
             <Sidebar />
 
             <main className="flex-1 overflow-y-auto no-scrollbar p-4 md:p-8 pb-24 md:pb-8">
@@ -192,16 +194,18 @@ export default function TokenListPage() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3 }}
-                        className="flex flex-col md:flex-row md:items-end justify-between gap-4"
+                        className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-white/[0.06]"
                     >
                         <div>
-                            <div className="flex items-center gap-3 mb-1">
-                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--agent)] to-[var(--accent-blue)] flex items-center justify-center shadow-lg shadow-[var(--agent)]/20">
-                                    <Coins className="w-5 h-5 text-white" />
+                            <div className="flex items-center gap-3 mb-2">
+                                <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shadow-[0_0_12px_rgba(255,87,34,0.15)]">
+                                    <Coins className="w-5 h-5 text-primary" />
                                 </div>
-                                <h1 className="text-2xl font-bold text-white tracking-tight">SURGE Tokens</h1>
+                                <div>
+                                    <h1 className="text-2xl font-bold tracking-tight bg-clip-text text-transparent bg-linear-to-r from-white to-white/70">SURGE Tokens</h1>
+                                    <p className="text-xs text-[var(--text-muted)] font-mono mt-0.5">Tokenized ownership layer for EIDO MVPs</p>
+                                </div>
                             </div>
-                            <p className="text-sm text-[var(--text-muted)] font-mono mt-1">Tokenized ownership layer for EIDO MVPs</p>
                         </div>
 
                         <div className="flex items-center gap-3">
