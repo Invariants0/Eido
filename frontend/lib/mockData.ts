@@ -29,7 +29,7 @@ export const mockActivityLogs: ActivityLog[] = [
 // Mock MVP List Items (for dashboard)
 export const mockMvpList: { items: MVPListItem[]; total: number } = {
     items: [
-        { id: '1', name: 'AI Invoice Tracker', tagline: 'Automates freelancer invoices', status: 'deployed', currentStage: 'Deploy', tokenSymbol: 'INVC', tokenStatus: 'minted', deploymentUrl: 'https://ai-invoice.here.now', createdAt: new Date().toISOString() },
+        { id: 'eido-demo-001', name: 'AI Invoice Tracker', tagline: 'Autonomous invoice management for freelancers', status: 'deployed', currentStage: 'Deploy', tokenSymbol: 'INVC', tokenStatus: 'minted', deploymentUrl: 'https://ai-invoice-tracker.here.now', createdAt: new Date().toISOString() },
         { id: '2', name: 'EcoRewards App', tagline: 'Gamified recycling tracking application', status: 'failed', currentStage: 'Deploy', tokenSymbol: '', tokenStatus: 'none', createdAt: new Date(Date.now() - 86400000).toISOString() },
         { id: '3', name: 'Solana Meme Generator', tagline: 'Generates and mints memes as NFTs automatically', status: 'building', currentStage: 'Build', tokenSymbol: '', tokenStatus: 'none', createdAt: new Date(Date.now() - 86400000 * 2).toISOString() },
         { id: '4', name: 'Voice-to-CRM tool', tagline: 'Transcribes voice notes directly into Salesforce records', status: 'idea', currentStage: 'Ideation', tokenSymbol: '', tokenStatus: 'none', createdAt: new Date(Date.now() - 86400000 * 3).toISOString() }
@@ -82,6 +82,51 @@ export const mockMvps: Record<string, MVP> = {
             timestamp: new Date().toISOString()
         },
         createdAt: new Date().toISOString()
+    },
+    'eido-demo-001': {
+        id: 'eido-demo-001',
+        name: 'AI Invoice Tracker',
+        tagline: 'Autonomous invoice management for freelancers',
+        status: 'deployed',
+        currentStage: 'Deploy',
+        retryCount: 1,
+        mode: 'agent',
+        ideaSummary: 'A simple AI tool that takes PDF invoices and parses them into a structured database. Supports freelancers and small businesses tracking payments automatically.',
+        techStack: ['Next.js 15', 'PostgreSQL', 'Prisma', 'FastAPI', 'Tailwind'],
+        stages: [
+            { name: 'Ideation', status: 'completed', agentName: 'researcher', durationMs: 4500 },
+            { name: 'Architecture', status: 'completed', agentName: 'architect', durationMs: 7200 },
+            { name: 'Build', status: 'completed', agentName: 'developer', durationMs: 14800 },
+            { name: 'Deploy', status: 'completed', agentName: 'devops', durationMs: 6100 },
+        ],
+        logs: [],
+        reasoning: {
+            summary: 'Chose Next.js for better deployment support on here.now. PostgreSQL preferred over SQLite for multi-tenant readiness. Context compressed 3× via TOON.',
+            reflectionNotes: 'Retry was needed on invoice parser — null-check missing on optional PDF metadata field. Fixed deterministically.',
+            contextCompressionSummary: 'Compressed 45k tokens to 4.1k with TOON optimizer. Ratio: 10.9×',
+            lastStepOutput: { filesWritten: 5, testsPassed: 4, buildDurationMs: 14800 },
+        },
+        deployment: {
+            url: 'https://ai-invoice-tracker.here.now',
+            status: 'running',
+            timestamp: new Date().toISOString(),
+            platform: 'here.now',
+        },
+        token: {
+            name: 'Invoice Token',
+            symbol: 'INVC',
+            contractAddress: '0xA3f9D21C8bE4a290F3cD7e1Bb3e92A14d21C8bE4',
+            supply: 1_000_000,
+            createdAt: new Date().toISOString(),
+            txHash: '0x7f3ab14c92e8f3d2a1b47c6e9d0f52e3a8b1c91d',
+        },
+        moltbook: {
+            status: 'posted',
+            postUrl: 'https://moltbook.com/eido/ai-invoice-tracker',
+            message: 'Just autonomously built and deployed AI Invoice Tracker. Idea → live MVP in 55s. #EIDO #lablab #autonomous',
+            timestamp: new Date().toISOString(),
+        },
+        createdAt: new Date().toISOString(),
     },
     '3': {
         id: '3',

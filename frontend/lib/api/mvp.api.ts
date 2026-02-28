@@ -1,4 +1,5 @@
 import { apiClient } from '../config';
+import { mockMvps, getFallbackMockMvp, mockMvpList } from '../mockData';
 import type {
     MVP,
     MVPCreateRequest,
@@ -27,6 +28,7 @@ export const MvpAPI = {
     },
 
     async getById(id: string): Promise<MVP> {
+        try {
         const response = await apiClient.get<MVPBackendResponse>(`/api/mvp/${id}`);
         const raw = response.data;
 
@@ -69,6 +71,10 @@ export const MvpAPI = {
             },
             createdAt: raw.created_at
         };
+        } catch {
+            // Backend unreachable — serve from frontend mock data
+            return mockMvps[id] ?? getFallbackMockMvp(id);
+        }
     },
 
     async getRuns(id: string): Promise<MVPRunsResponse> {
@@ -153,19 +159,24 @@ export const MvpAPI = {
     },
 
     async getList(): Promise<MVPListItem[]> {
-        console.warn('[api] getMVPList not yet implemented - use getListParams instead');
-        const response = await this.getListParams(1, 100);
-
-        return response.items.map(item => ({
-            id: item.id.toString(),
-            name: item.name,
-            tagline: item.idea_summary || '',
-            status: item.status as 'idea' | 'building' | 'failed' | 'deployed',
-            currentStage: 'Build' as const,
-            tokenSymbol: item.token_id || '',
-            tokenStatus: item.token_id ? 'minted' as const : 'none' as const,
-            deploymentUrl: item.deployment_url || undefined,
-            createdAt: item.created_at,
-        }));
+        const demoEntry = mockMvpList.items[0]; // 'eido-demo-001' — always first
+        try {
+            const response = await MvpAPI.getListParams(1, 100);
+            const backendItems: MVPListItem[] = response.items.map(item => ({
+                id: item.id.toString(),
+                name: item.name,
+                tagline: item.idea_summary || '',
+                status: item.status as 'idea' | 'building' | 'failed' | 'deployed',
+                currentStage: 'Build' as const,
+                tokenSymbol: item.token_id || '',
+                tokenStatus: item.token_id ? 'minted' as const : 'none' as const,
+                deploymentUrl: item.deployment_url || undefined,
+                createdAt: item.created_at,
+            }));
+            // Prepend demo MVP; exclude backend rows with the same id
+            return [demoEntry, ...backendItems.filter(i => i.id !== demoEntry.id)];
+        } catch {
+            return mockMvpList.items;
+        }
     }
 };
