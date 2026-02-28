@@ -48,7 +48,7 @@ class AIRuntimeFacade:
     def __init__(self, mvp_id: int):
         self.mvp_id = mvp_id
         self.llm_router = LLMRouter()
-        self.crewai_service = CrewAIService(mvp_id, self.llm_router)
+        self.crewai_service = CrewAIService(mvp_id, self.llm_router, verbose=False)
         self.openclaw_service = OpenClawService(mvp_id)
         self.context_manager = None  # Initialized in execute_stage
 
@@ -104,6 +104,10 @@ class AIRuntimeFacade:
             # Execute crew
             crew_result = await self.crewai_service.execute_crew(stage_name, context)
             
+            # Execute tools if needed (stub for now)
+            # In real implementation, crew would request tool execution
+            # tool_results = await self.openclaw_service.execute_tool_sequence(tools)
+            
             # Get statistics
             tool_stats = self.openclaw_service.get_stats()
             llm_stats = self.llm_router.get_usage_stats()
@@ -141,7 +145,7 @@ class AIRuntimeFacade:
         
         except Exception as e:
             logger.error(
-                f"Stage {stage_name} failed: {e}",
+                "Stage {} failed: {}", stage_name, e,
                 extra={"mvp_id": mvp_id},
                 exc_info=True
             )
