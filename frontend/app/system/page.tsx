@@ -85,11 +85,12 @@ function ServiceCard({ service, index }: { service: ServiceStatus; index: number
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25, delay: index * 0.04 }}
-            className={`bg-[var(--surface)] border rounded-xl overflow-hidden transition-colors ${service.health === 'operational'
-                ? 'border-white/[0.06] hover:border-white/[0.1]'
-                : service.health === 'degraded'
-                    ? 'border-[var(--warning)]/20 hover:border-[var(--warning)]/30'
-                    : 'border-[var(--error)]/20 hover:border-[var(--error)]/30'
+            className={`bg-[var(--surface)]/80 backdrop-blur-xl border rounded-2xl overflow-hidden transition-all relative group ${
+                service.health === 'operational'
+                    ? 'border-white/[0.06] hover:border-primary/20 hover:shadow-(--glow-primary)'
+                    : service.health === 'degraded'
+                        ? 'border-[var(--warning)]/20 hover:border-[var(--warning)]/30'
+                        : 'border-[var(--error)]/20 hover:border-[var(--error)]/30'
                 }`}
         >
             {/* Header */}
@@ -196,11 +197,11 @@ export default function SystemStatusPage() {
     // Loading state
     if (loading) {
         return (
-            <div className="flex min-h-screen bg-[var(--background)]">
+            <div className="flex min-h-screen">
                 <Sidebar />
                 <div className="flex-1 flex items-center justify-center">
                     <div className="flex flex-col items-center gap-4">
-                        <div className="w-12 h-12 rounded-full border-2 border-[var(--agent)]/20 border-t-[var(--agent)] animate-spin" />
+                        <div className="w-12 h-12 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
                         <p className="text-sm font-mono text-[var(--text-secondary)]">Checking system health...</p>
                     </div>
                 </div>
@@ -216,7 +217,7 @@ export default function SystemStatusPage() {
     const downCount = status.services.filter((s) => s.health === 'down').length;
 
     return (
-        <div className="flex min-h-screen bg-[var(--background)] text-[var(--text-primary)]">
+        <div className="flex min-h-screen text-[var(--text-primary)]">
             <Sidebar />
 
             <main className="flex-1 overflow-y-auto no-scrollbar p-4 md:p-8 pb-24 md:pb-8">
@@ -227,11 +228,18 @@ export default function SystemStatusPage() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3 }}
-                        className="flex flex-col md:flex-row md:items-end justify-between gap-4"
+                        className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-white/[0.06]"
                     >
                         <div>
-                            <h1 className="text-2xl font-bold text-white tracking-tight">System Status</h1>
-                            <p className="text-sm text-[var(--text-muted)] font-mono mt-1">Infrastructure & Runtime Overview</p>
+                            <div className="flex items-center gap-3 mb-2">
+                                <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shadow-[0_0_12px_rgba(255,87,34,0.15)]">
+                                    <Server className="w-5 h-5 text-primary" />
+                                </div>
+                                <div>
+                                    <h1 className="text-2xl font-bold tracking-tight bg-clip-text text-transparent bg-linear-to-r from-white to-white/70">System Status</h1>
+                                    <p className="text-xs text-[var(--text-muted)] font-mono mt-0.5">Infrastructure &amp; Runtime Overview</p>
+                                </div>
+                            </div>
                         </div>
 
                         <div className="flex items-center gap-3">
