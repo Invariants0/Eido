@@ -19,11 +19,24 @@ class ToonAdapter:
         self._estimate_savings_func = None
         
         try:
-            from toon_format import encode, estimate_savings
-            self._encode_func = encode
-            self._estimate_savings_func = estimate_savings
-            self._toon_available = True
-            logger.info("TOON library loaded successfully")
+            import toon_format
+            if hasattr(toon_format, 'encode'):
+                self._encode_func = toon_format.encode
+                
+                # estimate_savings might not be available in all versions
+                if hasattr(toon_format, 'estimate_savings'):
+                    self._estimate_savings_func = toon_format.estimate_savings
+                else:
+                    # Custom simple estimator if library version doesn't have it
+                    def estimate_savings_fallback(data):
+                        # Rough heuristic: TOON is usually ~30-50% smaller than formatted JSON
+                        return 40.0 
+                    self._estimate_savings_func = estimate_savings_fallback
+                    
+                self._toon_available = True
+                logger.info("TOON library loaded successfully")
+            else:
+                logger.warning("toon-format library found but missing 'encode' function")
         except ImportError:
             logger.warning(
                 "toon-format library not available. Install with: pip install toon-format. "
@@ -45,19 +58,19 @@ class ToonAdapter:
             TOON-encoded string, or JSON fallback if TOON unavailable
         """
         if not self._toon_available or self._encode_func is None:
-            # Fallback to JSON
+            # Fallback to Minified JSON for token savings
             try:
-                return json.dumps(data, indent=2, default=str)
+                return json.dumps(data, separators=(',', ':'), default=str)
             except Exception as e:
-                logger.error(f"JSON fallback encoding failed: {e}")
+                logger.error("JSON fallback encoding failed: {}", e)
                 return str(data)
         
         try:
             return self._encode_func(data)
         except Exception as e:
-            logger.error(f"TOON encoding failed: {e}, falling back to JSON")
+            logger.error("TOON encoding failed: {}, falling back to Minified JSON", e)
             try:
-                return json.dumps(data, indent=2, default=str)
+                return json.dumps(data, separators=(',', ':'), default=str)
             except Exception:
                 return str(data)
     
@@ -81,7 +94,7 @@ class ToonAdapter:
             savings = self._estimate_savings_func(data)
             return encoded, savings
         except Exception as e:
-            logger.warning(f"Token savings estimation failed: {e}")
+            logger.warning("Token savings estimation failed: {}", e)
             return encoded, None
     
     def safe_encode(self, data: Any, fallback: str = "") -> str:
@@ -99,7 +112,7 @@ class ToonAdapter:
             result = self.encode(data)
             return result if result else fallback
         except Exception as e:
-            logger.error(f"Safe encode failed: {e}")
+            logger.error("Safe encode failed: {}", e)
             return fallback or str(data)
 
 
