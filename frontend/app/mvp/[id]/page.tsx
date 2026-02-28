@@ -24,6 +24,7 @@ import { CodeViewer } from '@/components/mvp/CodeViewer';
 
 import { getMVP, triggerRetryBuild, advanceStage } from '@/lib/api';
 import { useDemoSimulation } from '@/hooks/useDemoSimulation';
+import { useMVPEvents } from '@/hooks/useMVPEvents';
 import type { MVP, OperationMode, LifecycleStage } from '@/lib/types';
 
 type RightTab = 'preview' | 'console' | 'brain' | 'code';
@@ -99,6 +100,11 @@ export default function MVPDetailPage() {
   // Demo simulation — activates when NEXT_PUBLIC_DEMO_MODE=true and id matches demo MVP ID
   const demoSim = useDemoSimulation(id);
 
+  // Real-time SSE pipeline events — active when NOT in demo mode
+  const { logs: sseLogs, connected: sseConnected } = useMVPEvents(
+    demoSim?.active ? null : id
+  );
+
   const [fetchedMvp, setMvp] = useState<MVP | null>(null);
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState<OperationMode>('agent');
@@ -139,7 +145,10 @@ export default function MVPDetailPage() {
 
   // Keep mvp in sync with simulation state (updates every tick)
   const activeMvp: MVP | null = demoSim?.active ? demoSim.mvp : fetchedMvp;
-  const activeLogs = demoSim?.active ? demoSim.logs : (fetchedMvp?.logs ?? []);
+  // Prefer live SSE logs when available; fall back to polled mvp.logs
+  const activeLogs = demoSim?.active
+    ? demoSim.logs
+    : (sseLogs.length > 0 ? sseLogs : (fetchedMvp?.logs ?? []));
 
   // ── Smooth resize via rAF + direct DOM mutation ─────────────────────────
   const onDragStart = useCallback((e: React.MouseEvent) => {
@@ -429,7 +438,19 @@ export default function MVPDetailPage() {
             <div className="w-px h-5 bg-white/[0.06] mr-2 mb-1 hidden md:block" />
 
             <RightTabBtn active={rightTab === 'preview'} onClick={() => setRightTab('preview')} icon={Eye} label="Preview" />
-            <RightTabBtn active={rightTab === 'console'} onClick={() => setRightTab('console')} icon={Terminal} label="Console" />
+            {/* Console tab — shows live dot when SSE stream is connected */}
+            <button
+              onClick={() => setRightTab('console')}
+              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-all relative ${
+                rightTab === 'console' ? 'border-primary text-primary' : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+              }`}
+            >
+              <Terminal className="w-3.5 h-3.5" />
+              <span>Console</span>
+              {sseConnected && !demoSim?.active && (
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)] animate-pulse" />
+              )}
+            </button>
             <RightTabBtn active={rightTab === 'brain'} onClick={() => setRightTab('brain')} icon={Brain} label="Brain" />
             <RightTabBtn active={rightTab === 'code'} onClick={() => setRightTab('code')} icon={Code2} label="Code" />
 
@@ -451,7 +472,7 @@ export default function MVPDetailPage() {
               )}
               {rightTab === 'console' && (
                 <motion.div key="console" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }} className="h-full p-4">
-                  <ExecutionConsole logs={activeLogs} isStreaming={mode === 'agent' || (demoSim?.active === true && !demoSim.isComplete)} />
+                  <ExecutionConsole logs={activeLogs} isStreaming={sseConnected || mode === 'agent' || (demoSim?.active === true && !demoSim.isComplete)} />
                 </motion.div>
               )}
               {rightTab === 'brain' && (
