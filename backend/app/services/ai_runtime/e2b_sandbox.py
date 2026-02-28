@@ -3,6 +3,7 @@ import os
 import shutil
 import subprocess
 from e2b_code_interpreter import Sandbox
+from e2b.connection_config import ConnectionConfig
 from ...config.settings import config
 from ...logger import get_logger
 
@@ -26,7 +27,7 @@ class E2BSandboxManager:
             os.makedirs(self.workspace_path, exist_ok=True)
         else:
             try:
-                self.sandbox = Sandbox(api_key=self.api_key)
+                self.sandbox = Sandbox(connection_config=ConnectionConfig(api_key=self.api_key))
                 # Initialize workspace
                 self.sandbox.commands.run(f"mkdir -p {self.workspace_path}")
                 logger.info(f"E2B Sandbox created: {self.sandbox.id}")

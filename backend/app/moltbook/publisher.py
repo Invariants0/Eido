@@ -51,7 +51,6 @@ class MoltbookPublisher:
                         "submolt": submolt,
                         "title": title,
                         "content": content,
-                        "tags": tags or ["eido", "mvp", "autonomous"]
                     }
                 )
                 response.raise_for_status()
@@ -80,7 +79,7 @@ class MoltbookPublisher:
 
     async def solve_challenge(self, challenge_text: str) -> Optional[str]:
         """Solve the Moltbook AI verification challenge using an LLM."""
-        from app.services.ai_runtime.llm_router import LLMRouter
+        from app.services.ai_runtime.llm_router import LLMRouter, TaskType
         if not self._router:
             self._router = LLMRouter()
             
@@ -94,12 +93,10 @@ class MoltbookPublisher:
         
         try:
             result = await self._router.execute_llm_call(
-                task_id="ARCHITECTURE", # Using a high-quality model for logic
-                prompt=f"Challenge: {challenge_text}",
-                system_prompt=system_prompt
+                task_type=TaskType.ARCHITECTURE,  # high-quality model for logic
+                prompt=f"System: {system_prompt}\n\nChallenge: {challenge_text}",
             )
-            # The router returns a dict with 'content'
-            answer = result.get("content", "").strip()
+            answer = result.raw_output.strip()
             # Basic validation
             if answer.replace(".", "").replace("-", "").isdigit():
                 logger.debug(f"Solved challenge: {challenge_text} -> {answer}")
