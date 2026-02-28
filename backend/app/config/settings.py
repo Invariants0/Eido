@@ -52,22 +52,46 @@ class Config:
     MAX_TOTAL_RUNTIME = int(os.getenv("MAX_TOTAL_RUNTIME", "3600"))  # seconds
     MAX_TOTAL_COST = float(os.getenv("MAX_TOTAL_COST", "10.0"))  # USD
     
-    # LLM Configuration
-    DEFAULT_LLM_MODEL = os.getenv("DEFAULT_LLM_MODEL", "llama-3.3-70b-versatile")
-    IDEATION_LLM_MODEL = os.getenv("IDEATION_LLM_MODEL", "llama-3.3-70b-versatile")
-    ARCHITECTURE_LLM_MODEL = os.getenv("ARCHITECTURE_LLM_MODEL", "llama-3.3-70b-versatile")
-    BUILDING_LLM_MODEL = os.getenv("BUILDING_LLM_MODEL", "llama-3.3-70b-versatile")
-    DEPLOYMENT_LLM_MODEL = os.getenv("DEPLOYMENT_LLM_MODEL", "llama-3.3-70b-versatile")
-    TOKENIZATION_LLM_MODEL = os.getenv("TOKENIZATION_LLM_MODEL", "llama-3.3-70b-versatile")
-    SUMMARY_LLM_MODEL = os.getenv("SUMMARY_LLM_MODEL", "llama-3.3-70b-versatile")
+    # LLM Configuration - Distributed across different Groq models to avoid rate limits
+    DEFAULT_LLM_MODEL = os.getenv("DEFAULT_LLM_MODEL", "llama-3.1-8b-instant")
+    IDEATION_LLM_MODEL = os.getenv("IDEATION_LLM_MODEL", "llama-3.1-8b-instant")  # researcher, analyst - simple tasks
+    ARCHITECTURE_LLM_MODEL = os.getenv("ARCHITECTURE_LLM_MODEL", "llama-3.1-70b-versatile")  # architect, tech-lead - complex design
+    BUILDING_LLM_MODEL = os.getenv("BUILDING_LLM_MODEL", "llama-3.3-70b-versatile")  # developer - code generation (most complex)
+    DEPLOYMENT_LLM_MODEL = os.getenv("DEPLOYMENT_LLM_MODEL", "gemma2-9b-it")  # devops - medium complexity
+    TOKENIZATION_LLM_MODEL = os.getenv("TOKENIZATION_LLM_MODEL", "mixtral-8x7b-32768")  # blockchain - high complexity
+    SUMMARY_LLM_MODEL = os.getenv("SUMMARY_LLM_MODEL", "llama-3.1-8b-instant")  # summaries - simple tasks
     
-    # LLM API Keys
-    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-    OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL")  # For local LLMs or proxies
+    # Agent-specific model mapping for optimal rate limit distribution
+    # The developer (building) agent uses Codellama directly; other roles can
+    # specify Ollama cloud models but we only translate a few to Groq when
+    # necessary.  This avoids a catch‑all that forced everything to llama-3.1.
+    AGENT_MODEL_MAPPING = {
+        "analyst": os.getenv("ANALYST_LLM_MODEL", "ollama/glm-5:cloud"),                # Cloud: Reasoning specialist
+        "researcher": os.getenv("RESEARCHER_LLM_MODEL", "ollama/kimi-k2.5:cloud"),      # Cloud: Multimodal reasoning with subagents
+        "social_manager": os.getenv("SOCIAL_MANAGER_LLM_MODEL", "llama-3.1-8b-instant"), # Groq: Fast & reliable
+        "architect": os.getenv("ARCHITECT_LLM_MODEL", "ollama/glm-5:cloud"),            # Cloud: Reasoning and architecture
+        "tech_lead": os.getenv("TECH_LEAD_LLM_MODEL", "ollama/minimax-m2.5:cloud"),     # Cloud: Fast coding & productivity
+        "developer": os.getenv("DEVELOPER_LLM_MODEL", "ollama/codellama:latest"),       # Local Codellama for building
+        "qa": os.getenv("QA_LLM_MODEL", "llama-3.1-8b-instant"),                      # Groq: Fast testing
+        "devops": os.getenv("DEVOPS_LLM_MODEL", "ollama/minimax-m2.5:cloud"),          # Cloud: Infrastructure productivity
+        "blockchain": os.getenv("BLOCKCHAIN_LLM_MODEL", "ollama/codellama:latest"),     # Latest: Smart contract coding
+    }
+
+    # add configurable delay between agent executions (seconds)
+    AGENT_DELAY_SECONDS = float(os.getenv("AGENT_DELAY_SECONDS", "1.0"))
+
     
-    ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
-    
+    # 🔑 API Keys - Groq working great + Ollama cloud with your key
     GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+    
+    # Ollama Configuration with your cloud API key
+    OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+    OLLAMA_CLOUD_API_KEY = os.getenv("OLLAMA_CLOUD_API_KEY", "e687522cf6704c3a89e6db946728d99e.wyFp1fhXy7Mifr4BTchrMdcL")
+    
+    # Optional backup providers
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+    ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
     
     # Ollama (Local LLM) — no API key needed, just the URL
