@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { motion } from 'motion/react';
 import {
   Rocket, Coins, CheckCircle2, Loader2, Lightbulb,
-  AlertCircle, Server, Activity, ArrowRight, Zap, Combine, Clock, Database, Globe
+  AlertCircle, Server, Activity, ArrowRight, Zap, Combine, Clock, Database, Globe, LayoutDashboard
 } from 'lucide-react';
 
 import { Sidebar } from '@/components/sidebar';
@@ -24,10 +24,11 @@ const mvpStatusConfig = {
 
 function DashboardCard({ title, value, subtitle, icon: Icon, colorClass }: any) {
   return (
-    <div className="bg-[var(--surface)] border border-white/[0.06] rounded-2xl p-6 relative overflow-hidden group">
+    <div className="bg-[var(--surface)]/80 backdrop-blur-xl border border-white/[0.06] rounded-2xl p-6 relative overflow-hidden group hover:border-primary/20 hover:shadow-(--glow-primary) transition-all">
+      <div className="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-primary/25 to-transparent" />
       <div className={`absolute top-0 right-0 w-32 h-32 -mr-12 -mt-12 bg-current opacity-[0.03] blur-3xl rounded-full ${colorClass}`} />
       <div className="flex items-start justify-between relative z-10 mb-4">
-        <div className={`w-10 h-10 rounded-xl bg-white/[0.04] flex items-center justify-center border border-white/[0.06] ${colorClass}`}>
+        <div className={`w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 shadow-[0_0_10px_rgba(255,87,34,0.12)] ${colorClass}`}>
           <Icon className="w-5 h-5" />
         </div>
       </div>
@@ -126,11 +127,11 @@ export default function DashboardPage() {
 
   if (loading || !summary) {
     return (
-      <div className="flex min-h-screen bg-[var(--background)]">
+      <div className="flex min-h-screen">
         <Sidebar />
         <div className="flex-1 flex items-center justify-center">
           <div className="flex flex-col items-center gap-4">
-            <div className="w-12 h-12 rounded-full border-2 border-[var(--agent)]/20 border-t-[var(--agent)] animate-spin" />
+            <div className="w-12 h-12 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
             <p className="text-sm font-mono text-[var(--text-secondary)]">Initializing command center...</p>
           </div>
         </div>
@@ -139,7 +140,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-[var(--background)] text-[var(--text-primary)]">
+    <div className="flex min-h-screen text-[var(--text-primary)]">
       <Sidebar />
 
       <main className="flex-1 overflow-y-auto no-scrollbar p-6 md:p-10 pb-24 md:pb-12">
@@ -149,11 +150,16 @@ export default function DashboardPage() {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col md:flex-row md:items-end justify-between gap-6"
+            className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-white/[0.06]"
           >
-            <div>
-              <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight mb-2">Dashboard</h1>
-              <p className="text-sm text-[var(--text-muted)] font-mono">Autonomous Foundry Overview</p>
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shadow-[0_0_12px_rgba(255,87,34,0.15)] shrink-0">
+                <LayoutDashboard className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-linear-to-r from-white to-white/70">Dashboard</h1>
+                <p className="text-xs text-[var(--text-muted)] font-mono mt-0.5">Autonomous Foundry Overview</p>
+              </div>
             </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--success)]/10 border border-[var(--success)]/20">
@@ -191,12 +197,12 @@ export default function DashboardPage() {
                 transition={{ delay: 0.2 }}
                 className="space-y-4"
               >
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                    <Rocket className="w-5 h-5 text-[var(--text-secondary)]" />
+                <div className="flex items-center justify-between pb-4 border-b border-white/[0.06]">
+                  <h2 className="text-base font-bold text-white flex items-center gap-2">
+                    <Rocket className="w-4 h-4 text-primary" />
                     Recent MVPs
                   </h2>
-                  <Link href="/mvp" className="text-xs font-mono text-[var(--agent)] hover:text-white transition-colors flex items-center gap-1 group">
+                  <Link href="/mvp" className="text-xs font-mono text-primary/70 hover:text-primary transition-colors flex items-center gap-1 group">
                     View All Pipeline
                     <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                   </Link>
@@ -204,15 +210,16 @@ export default function DashboardPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {mvps.map((mvp, idx) => {
-                    const sc = mvpStatusConfig[mvp.status];
+                    const sc = mvpStatusConfig[mvp.status as keyof typeof mvpStatusConfig] ?? mvpStatusConfig.idea;
                     const StatusIcon = sc.icon;
 
                     return (
                       <Link key={mvp.id} href={`/mvp/${mvp.id}`}>
-                        <div className="bg-[var(--surface)] border border-white/[0.06] rounded-xl p-5 hover:border-white/[0.12] transition-colors relative group h-full flex flex-col">
+                        <div className="bg-[var(--surface)]/80 backdrop-blur-xl border border-white/[0.06] rounded-2xl p-5 hover:border-primary/20 hover:shadow-(--glow-primary) transition-all relative group h-full flex flex-col overflow-hidden">
+                          <div className="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-primary/25 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                           <div className="flex items-start justify-between mb-3">
                             <div>
-                              <h3 className="text-base font-bold text-white group-hover:text-[var(--agent)] transition-colors line-clamp-1">{mvp.name}</h3>
+                              <h3 className="text-base font-bold text-white group-hover:text-primary transition-colors line-clamp-1">{mvp.name}</h3>
                               <p className="text-[11px] text-[var(--text-muted)] mt-1 line-clamp-1">{mvp.tagline}</p>
                             </div>
                             <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-bold font-mono border ${sc.className} shrink-0`}>
@@ -246,12 +253,12 @@ export default function DashboardPage() {
                 transition={{ delay: 0.3 }}
                 className="space-y-4"
               >
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                    <Server className="w-5 h-5 text-[var(--text-secondary)]" />
+                <div className="flex items-center justify-between pb-4 border-b border-white/[0.06]">
+                  <h2 className="text-base font-bold text-white flex items-center gap-2">
+                    <Server className="w-4 h-4 text-primary" />
                     System Snapshot
                   </h2>
-                  <Link href="/system" className="text-xs font-mono text-[var(--text-muted)] hover:text-white transition-colors flex items-center gap-1 group">
+                  <Link href="/system" className="text-xs font-mono text-primary/70 hover:text-primary transition-colors flex items-center gap-1 group">
                     Detailed Diagnostics
                     <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                   </Link>
@@ -276,10 +283,11 @@ export default function DashboardPage() {
               transition={{ delay: 0.4 }}
               className="xl:col-span-1"
             >
-              <div className="bg-[var(--surface)] border border-white/[0.06] rounded-2xl p-6 h-full shadow-lg">
-                <div className="flex items-center gap-2 mb-6">
-                  <Activity className="w-5 h-5 text-[var(--agent)]" />
-                  <h2 className="text-lg font-bold text-white">Activity Feed</h2>
+              <div className="bg-[var(--surface)]/80 backdrop-blur-xl border border-white/[0.06] rounded-2xl p-6 h-full shadow-lg relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-primary/25 to-transparent" />
+                <div className="flex items-center gap-2 mb-6 pb-4 border-b border-white/[0.06]">
+                  <Activity className="w-4 h-4 text-primary" />
+                  <h2 className="text-base font-bold text-white">Activity Feed</h2>
                 </div>
 
                 <div className="pr-2">
@@ -288,7 +296,7 @@ export default function DashboardPage() {
                   ))}
 
                   <div className="pt-4 mt-2 text-center">
-                    <button className="text-[11px] font-mono text-[var(--text-muted)] hover:text-[var(--agent)] transition-colors w-full py-2 border border-white/[0.04] rounded-lg bg-black/20 hover:bg-black/40">
+                    <button className="text-[11px] font-mono text-[var(--text-muted)] hover:text-primary transition-colors w-full py-2 border border-white/[0.04] rounded-lg bg-black/20 hover:bg-black/40 hover:border-primary/20">
                       Load Older Events
                     </button>
                   </div>
