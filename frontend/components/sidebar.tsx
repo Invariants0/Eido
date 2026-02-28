@@ -50,7 +50,7 @@ export function Sidebar() {
       <motion.div
         animate={{ width: collapsed ? 60 : 220 }}
         transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
-        className="hidden md:flex h-screen fixed left-0 top-0 flex-col z-50 border-r border-white/[0.06] bg-black/50 backdrop-blur-xl overflow-hidden shrink-0"
+        className="hidden md:flex h-screen fixed left-0 top-0 flex-col z-50 border-r border-white/[0.08] bg-[var(--surface-elevated)]/80 backdrop-blur-2xl overflow-hidden shrink-0"
       >
         {/* Logo Row */}
         <div className={clsx(
@@ -119,7 +119,7 @@ export function Sidebar() {
                   <motion.div
                     layoutId="activeNavDesktop"
                     className={clsx(
-                      'absolute inset-0 bg-white/[0.06] border border-white/[0.06] rounded-xl',
+                      'absolute inset-0 bg-primary/[0.09] border border-primary/[0.18] rounded-xl',
                     )}
                     initial={false}
                     transition={{ type: 'spring', stiffness: 500, damping: 30 }}
@@ -212,7 +212,7 @@ export function Sidebar() {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-              className="md:hidden fixed top-0 left-0 bottom-0 z-[70] w-64 bg-[var(--background)] border-r border-white/[0.08] flex flex-col"
+              className="md:hidden fixed top-0 left-0 bottom-0 z-[70] w-64 bg-[var(--surface-elevated)]/95 backdrop-blur-2xl border-r border-white/[0.08] flex flex-col"
             >
               {/* Mobile Header */}
               <div className="h-14 px-4 flex items-center justify-between border-b border-white/[0.05]">
@@ -240,7 +240,7 @@ export function Sidebar() {
                       href={item.href}
                       className={clsx(
                         'flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all',
-                        isActive ? 'bg-white/[0.07] text-white border border-white/[0.06]' : 'text-[var(--text-muted)] hover:text-white hover:bg-white/[0.04]'
+                        isActive ? 'bg-primary/[0.09] text-white border border-primary/[0.18]' : 'text-[var(--text-muted)] hover:text-white hover:bg-white/[0.04]'
                       )}
                     >
                       <item.icon className={clsx('w-4 h-4', isActive ? 'text-primary' : '')} />
@@ -263,7 +263,7 @@ export function Sidebar() {
       </AnimatePresence>
 
       {/* ── MOBILE BOTTOM NAV (fallback for dashboard pages) ─────────────── */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-xl border-t border-white/[0.08]">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-[var(--surface-elevated)]/90 backdrop-blur-2xl border-t border-white/[0.08]">
         <nav className="flex justify-around items-center px-2 py-1.5 pb-safe">
           {navItems.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
