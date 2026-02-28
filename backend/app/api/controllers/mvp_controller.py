@@ -2,6 +2,9 @@
 
 from fastapi import APIRouter, Depends, BackgroundTasks, status
 from sqlmodel import Session
+from datetime import datetime
+import json
+import asyncio
 from typing import List
 
 from ...db import get_session
@@ -84,3 +87,43 @@ def get_mvp_runs(
     service = MVPService(session)
     runs = service.get_agent_runs(mvp_id)
     return {"mvp_id": mvp_id, "runs": runs}
+
+
+@router.get("/{mvp_id}/events")
+async def stream_mvp_events(mvp_id: int):
+    """
+    Stream real-time log events for a specific MVP using SSE.
+    Used by the dashboard for live agent feedback.
+    """
+    from fastapi.responses import StreamingResponse
+    from ...services.sse_service import sse_manager
+    
+    async def sse_event_generator():
+        # Subscribe to this MVP's logs
+        queue = await sse_manager.subscribe(mvp_id)
+        try:
+            # Send initial connection event in a format the client expects
+            connect_data = {
+                "timestamp": datetime.utcnow().isoformat(),
+                "type": "connect",
+                "data": {"status": "connected", "mvp_id": mvp_id}
+            }
+            yield f"event: connect\ndata: {json.dumps(connect_data)}\n\n"
+            
+            while True:
+                # Wait for next event from the queue
+                message = await queue.get()
+                yield message
+        except asyncio.CancelledError:
+            # Client disconnected
+            sse_manager.unsubscribe(mvp_id, queue)
+            
+    return StreamingResponse(
+        sse_event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "Content-Type": "text/event-stream",
+        }
+    )
