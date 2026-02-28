@@ -80,6 +80,17 @@ class Config:
     # add configurable delay between agent executions (seconds)
     AGENT_DELAY_SECONDS = float(os.getenv("AGENT_DELAY_SECONDS", "1.0"))
 
+    # Groq fallback model rotation list (used when rate-limited)
+    GROQ_FALLBACK_MODELS = [
+        m.strip() for m in
+        os.getenv("GROQ_FALLBACK_MODELS", "llama-3.1-8b-instant,llama-3.3-70b-versatile,mixtral-8x7b-32768,gemma2-9b-it").split(",")
+        if m.strip()
+    ]
+
+    # Pipeline retry limits
+    MAX_STAGE_RETRIES = int(os.getenv("MAX_STAGE_RETRIES", "2"))
+    MAX_AGENT_RETRIES = int(os.getenv("MAX_AGENT_RETRIES", "3"))
+
     
     # 🔑 API Keys - Groq working great + Ollama cloud with your key
     GROQ_API_KEY = os.getenv("GROQ_API_KEY")
