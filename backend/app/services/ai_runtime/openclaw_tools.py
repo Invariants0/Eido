@@ -1,4 +1,4 @@
-from typing import Type, Optional
+from typing import Type, Optional, Any
 from pydantic import BaseModel, Field
 from crewai.tools import BaseTool
 from ...integrations.eido_webhook import EidoWebhookClient
@@ -8,9 +8,9 @@ logger = get_logger(__name__)
 
 class MoltbookPostInput(BaseModel):
     """Input for MoltbookPostTool."""
-    title: str = Field(..., description="The title of the Moltbook post.")
-    content: str = Field(..., description="The full markdown content of the post.")
-    submolt: str = Field("lablab", description="The submolt to post in (default: lablab).")
+    title: str = Field(..., description="Title of the post")
+    content: str = Field(..., description="Markdown content")
+    submolt: str = Field(..., description="Target submolt like lablab")
 
 class MoltbookPostTool(BaseTool):
     name: str = "post_to_moltbook"
@@ -60,16 +60,16 @@ class TelegramNotifyTool(BaseTool):
 
 class WebSearchInput(BaseModel):
     """Input for WebSearchTool."""
-    query: str = Field(..., description="The search query to execute.")
-    platform: Optional[str] = Field(None, description="Optional platform to restrict search (e.g., 'reddit', 'hackernews', 'producthunt').")
+    query: str = Field(..., description="Search query")
+    platform: str = Field(..., description="Platform like reddit or hackernews")
 
 class WebSearchTool(BaseTool):
-    name: str = "web_search"
-    description: str = "Performs a web search to find market data, competitor info, or user pain points. Can target specific platforms like Reddit or Hacker News."
+    name: str = "search_web"
+    description: str = "Researches market data and pain points on various platforms. Use EXACT format: search_web({'query': 'your search', 'platform': 'reddit'})"
     args_schema: Type[BaseModel] = WebSearchInput
     client: EidoWebhookClient = Field(default_factory=EidoWebhookClient)
 
-    def _run(self, query: str, platform: Optional[str] = None) -> str:
+    def _run(self, query: str, platform: str = "general") -> str:
         # In a real implementation, this would either call an OpenClaw skill 
         # or use a direct search API like Serper/Tavily.
         # For now, we'll route it through Eido's search capability.
@@ -87,6 +87,39 @@ class WebSearchTool(BaseTool):
             return str(result.get("results", "No results found."))
         except Exception as e:
             return f"Error performing web search: {str(e)}"
+
+
+class WebFetchInput(BaseModel):
+    """Input for WebFetchTool."""
+    url: str = Field(..., description="The URL to fetch content from")
+    max_chars: int = Field(10000, description="Maximum characters to return (default: 10,000)")
+
+class WebFetchTool(BaseTool):
+    name: str = "web_fetch"
+    description: str = "Fetches the content of a specific web page. Use EXACT format: web_fetch({'url': 'https://example.com', 'max_chars': 10000})"
+    args_schema: Type[BaseModel] = WebFetchInput
+    client: EidoWebhookClient = Field(default_factory=EidoWebhookClient)
+
+    def _run(self, url: str, max_chars: int = 10000) -> str:
+        import asyncio
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            
+        try:
+            # Route through Eido's fetch capability
+            payload = {"type": "fetch", "url": url, "max_chars": max_chars}
+            result = loop.run_until_complete(self.client._post("/fetch", payload))
+            
+            content = result.get("content", "")
+            if len(content) > max_chars:
+                content = content[:max_chars] + f"... (truncated from {len(content)} chars)"
+            
+            return content if content else "No content found or URL not accessible."
+        except Exception as e:
+            return f"Error fetching URL {url}: {str(e)}"
 
 # --- E2B Sandbox Tools ---
 

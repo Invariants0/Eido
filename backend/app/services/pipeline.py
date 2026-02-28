@@ -278,22 +278,22 @@ class AutonomousPipeline:
                 )
                 
                 # Trigger the webhook (Step 1.2 identity hook)
-                asyncio.create_task(self.webhook_client.notify_milestone(
+                asyncio.create_task(self.webhook_client.report_stage_progress(
                     self.mvp_id, 
                     stage_name, 
                     "SUCCESS", 
-                    {"duration_ms": duration_ms, "tokens": stage_result.token_usage, "cost": stage_result.cost_estimate}
+                    f"Duration: {duration_ms}ms, Tokens: {stage_result.token_usage}, Cost: ${stage_result.cost_estimate}"
                 ))
             else:
                 raise Exception(stage_result.error)
         
         except Exception as e:
             # Trigger webhook failure mode
-            asyncio.create_task(self.webhook_client.notify_milestone(
+            asyncio.create_task(self.webhook_client.report_stage_progress(
                 self.mvp_id, 
                 stage_name, 
                 "FAILED", 
-                {"error": str(e)}
+                str(e)
             ))
             # Mark agent run as failed if not already updated
             if agent_run.status == "running":
