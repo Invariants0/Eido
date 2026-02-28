@@ -56,7 +56,7 @@ STAGES = [
 
 async def run_full_orchestration():
     """Run all 5 stages sequentially, passing context between stages."""
-    service = CrewAIService(mvp_id=1)
+    service = CrewAIService(mvp_id=1, verbose=True)
     
     print("=" * 70)
     print("  EIDO Phase 2 — Full Agent Orchestration Test")
