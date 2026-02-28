@@ -123,8 +123,12 @@ class LLMRouter:
         "claude-3-opus": {"input": 0.015, "output": 0.075},
         "claude-3-sonnet-20240229": {"input": 0.003, "output": 0.015},
         "claude-3-haiku-20240307": {"input": 0.00025, "output": 0.00125},
-        # Groq (Free Tier)
+        # Groq (Free Tier) - Distributed across multiple models
         "llama-3.3-70b-versatile": {"input": 0.0, "output": 0.0},
+        "llama-3.1-70b-versatile": {"input": 0.0, "output": 0.0},
+        "llama-3.1-8b-instant": {"input": 0.0, "output": 0.0},
+        "gemma2-9b-it": {"input": 0.0, "output": 0.0},
+        "mixtral-8x7b-32768": {"input": 0.0, "output": 0.0},
         "llama3-70b": {"input": 0.0007, "output": 0.0009},
         "llama3-8b": {"input": 0.0001, "output": 0.0001},
         "llama-3.1-70b": {"input": 0.0006, "output": 0.0006},
