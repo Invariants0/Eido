@@ -41,7 +41,8 @@ function TimelineNode({ item, isLast }: { item: AgentTimelineItem, isLast: boole
                     {icon}
                 </div>
 
-                <div className="flex-1 bg-[var(--surface)] border border-white/[0.06] rounded-xl overflow-hidden shadow-lg transition-all hover:border-[var(--agent)]/30 group">
+                <div className="flex-1 bg-[var(--surface)]/80 backdrop-blur-xl border border-white/[0.06] rounded-2xl overflow-hidden shadow-lg transition-all hover:border-primary/20 hover:shadow-(--glow-primary) group relative">
+                    <div className="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                     <div
                         className="p-3.5 cursor-pointer flex items-start justify-between"
                         onClick={() => setExpanded(!expanded)}
@@ -120,11 +121,11 @@ export default function AgentBrainPage() {
 
     if (loading) {
         return (
-            <div className="flex min-h-screen bg-[var(--background)]">
+            <div className="flex min-h-screen">
                 <Sidebar />
                 <div className="flex-1 flex items-center justify-center">
                     <div className="flex flex-col items-center gap-4">
-                        <div className="w-12 h-12 rounded-full border-2 border-[var(--agent)]/20 border-t-[var(--agent)] animate-spin" />
+                        <div className="w-12 h-12 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
                         <p className="text-sm font-mono text-[var(--text-secondary)]">Analyzing neural pathways...</p>
                     </div>
                 </div>
@@ -135,7 +136,7 @@ export default function AgentBrainPage() {
     if (!memory) return null;
 
     return (
-        <div className="flex min-h-screen bg-[var(--background)] text-[var(--text-primary)]">
+        <div className="flex min-h-screen text-[var(--text-primary)]">
             <Sidebar />
 
             <main className="flex-1 overflow-y-auto no-scrollbar p-6 md:p-10 pb-24 md:pb-12">
@@ -149,11 +150,11 @@ export default function AgentBrainPage() {
                     >
                         <div>
                             <div className="flex items-center gap-3 mb-2">
-                                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--agent)] to-cyan-900 flex items-center justify-center shadow-[0_0_24px_rgba(34,211,238,0.2)]">
-                                    <Brain className="w-6 h-6 text-white" />
+                                <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shadow-[0_0_12px_rgba(255,87,34,0.15)]">
+                                    <Brain className="w-6 h-6 text-primary" />
                                 </div>
                                 <div>
-                                    <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+                                    <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2 bg-clip-text text-transparent bg-linear-to-r from-white to-white/70">
                                         Agent Brain
                                         <span className="relative flex h-2 w-2">
                                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--agent)] opacity-75"></span>
