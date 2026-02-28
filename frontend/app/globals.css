@@ -5,42 +5,84 @@
 ============================== */
 
 :root {
-  --background: #0B0F19;
-  --foreground: #ffffff;
+  /* ── Core Backgrounds ──────────────────────────── */
+  --background:        #080C15;   /* deepest bg layer  */
+  --surface:           #0D1424;   /* card / panel base */
+  --surface-elevated:  #111B2E;   /* raised cards      */
+  --surface-overlay:   #0F1A30;   /* modal / overlay   */
 
-  --card: #111827;
-  --card-foreground: #ffffff;
+  /* ── Legacy aliases (keep for backwards compat) ─ */
+  --card:              #0D1424;
+  --card-foreground:   #ffffff;
+  --border:            #1C2A44;
 
-  --surface: #111827;
+  /* ── Text hierarchy ────────────────────────────── */
+  --foreground:     #F0F4FF;   /* alias for body CSS rule */
+  --text-primary:   #F0F4FF;
+  --text-secondary: #B8BFCF;
+  --text-muted:     #7A8299;
+  --text-dim:       #49586A;
+  --muted-foreground: #7A8299; /* Tailwind text-muted-foreground alias */
 
-  --border: #1f1f1f;
+  /* ── Brand / Accent ────────────────────────────── */
+  --primary:     #FF5722;     /* orange – main accent   */
+  --primary-dim: #C43F18;     /* darker orange          */
 
-  /* Text hierarchy */
-  --text-primary: #F9FAFB;
-  --text-secondary: #9CA3AF;
-  --text-muted: #4B5563;
-  --text-dim: #374151;
+  /* Pre-computed RGB channels for rgba() composition */
+  --primary-rgb: 255, 87, 34;
+  --success-rgb: 16, 185, 129;
+  --warning-rgb: 245, 158, 11;
+  --error-rgb:   239, 68, 68;
+  --agent-rgb:   34, 211, 238;
 
-  /* Landing Accent (keep orange) */
-  --primary: #FF5722;
-
-  /* Agent Accent (NEW - Cyan) */
-  --agent: #22D3EE;
-
-  /* Accent Blue */
-  --accent-blue: #3B82F6;
-
-  /* Success / Warning / Error */
+  /* ── Semantic status ───────────────────────────── */
   --success: #10B981;
   --warning: #F59E0B;
-  --error: #EF4444;
+  --error:   #EF4444;
+  --agent:   #22D3EE;   /* cyan – agent/runtime accent */
+  --accent-blue: #3B82F6;
+
+  /* ── Toast surfaces (token-driven, no hardcoded hex) */
+  --toast-success-bg:     rgba(16, 185, 129, 0.07);
+  --toast-success-border: rgba(16, 185, 129, 0.25);
+  --toast-error-bg:       rgba(239, 68, 68, 0.07);
+  --toast-error-border:   rgba(239, 68, 68, 0.25);
+
+  /* ── Borders ───────────────────────────────────── */
+  --border-subtle:  rgba(255, 255, 255, 0.05);
+  --border-medium:  rgba(255, 255, 255, 0.08);
+  --border-strong:  rgba(255, 255, 255, 0.13);
+
+  /* ── Glow shadows (pre-built) ──────────────────── */
+  --glow-primary: 0 0 24px rgba(255, 87, 34, 0.18);
+  --glow-success: 0 0 12px rgba(16, 185, 129, 0.55);
+  --glow-error:   0 0 12px rgba(239, 68, 68, 0.55);
+  --glow-agent:   0 0 20px rgba(34, 211, 238, 0.22);
 
   --radius: 1rem;
 }
 
 @theme {
-  --font-sans: var(--font-inter);
-  --font-mono: var(--font-jetbrains-mono);
+  --font-sans:  var(--font-inter);
+  --font-mono:  var(--font-jetbrains-mono);
+
+  /* ── Color tokens exposed to Tailwind utilities ─────────
+     Enables: bg-primary, text-primary, border-primary,
+              bg-background, bg-surface, text-muted-foreground
+              and all /opacity variants (e.g. bg-primary/10)
+  ──────────────────────────────────────────────────────── */
+  --color-primary:          #FF5722;
+  --color-primary-dim:      #C43F18;
+  --color-background:       #080C15;
+  --color-surface:          #0D1424;
+  --color-surface-elevated: #111B2E;
+  --color-foreground:       #F0F4FF;
+  --color-muted-foreground: #7A8299;
+  --color-border:           #1C2A44;
+  --color-success:          #10B981;
+  --color-warning:          #F59E0B;
+  --color-error:            #EF4444;
+  --color-agent:            #22D3EE;
 }
 
 /* ==============================
@@ -56,19 +98,31 @@ body {
 
 /* ==============================
    GLASS PANEL
+   Hover uses primary orange — consistent with brand.
 ============================== */
 
 .glass-panel {
-  background: rgba(20, 20, 20, 0.6);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(13, 20, 36, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius);
-  transition: all 200ms ease;
+  transition: border-color 200ms ease, box-shadow 200ms ease;
 }
 
 .glass-panel:hover {
-  border-color: rgba(34, 211, 238, 0.3);
-  box-shadow: 0 0 25px rgba(34, 211, 238, 0.08);
+  border-color: rgba(var(--primary-rgb), 0.22);
+  box-shadow: var(--glow-primary);
+}
+
+/* ==============================
+   SURFACE CARD  (no glow variant)
+============================== */
+
+.surface-card {
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
 }
 
 /* ==============================
@@ -86,81 +140,154 @@ body {
   overflow-y: auto;
 }
 
-/* Restore scrollbar ONLY for terminal */
-.terminal::-webkit-scrollbar {
-  width: 6px;
-}
-
+.terminal::-webkit-scrollbar { width: 6px; }
 .terminal::-webkit-scrollbar-thumb {
-  background: #2a2a2a;
+  background: #1e2a3a;
   border-radius: 3px;
 }
 
-.log-info {
-  color: #9ca3af;
-}
-
-.log-success {
-  color: var(--success);
-}
-
-.log-warning {
-  color: var(--warning);
-}
-
-.log-error {
-  color: var(--error);
-}
+.log-info    { color: #9eb3cc; }
+.log-success { color: var(--success); }
+.log-warning { color: var(--warning); }
+.log-error   { color: var(--error); }
 
 /* ==============================
    STATUS BADGES
 ============================== */
 
+.badge-primary {
+  background: rgba(var(--primary-rgb), 0.10);
+  color: var(--primary);
+  border: 1px solid rgba(var(--primary-rgb), 0.28);
+}
+
 .badge-agent {
-  background: rgba(34, 211, 238, 0.1);
+  background: rgba(var(--agent-rgb), 0.10);
   color: var(--agent);
-  border: 1px solid rgba(34, 211, 238, 0.3);
+  border: 1px solid rgba(var(--agent-rgb), 0.28);
 }
 
 .badge-success {
-  background: rgba(16, 185, 129, 0.1);
+  background: rgba(var(--success-rgb), 0.10);
   color: var(--success);
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  border: 1px solid rgba(var(--success-rgb), 0.28);
 }
 
 .badge-warning {
-  background: rgba(245, 158, 11, 0.1);
+  background: rgba(var(--warning-rgb), 0.10);
   color: var(--warning);
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  border: 1px solid rgba(var(--warning-rgb), 0.28);
 }
 
 .badge-error {
-  background: rgba(239, 68, 68, 0.1);
+  background: rgba(var(--error-rgb), 0.10);
   color: var(--error);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  border: 1px solid rgba(var(--error-rgb), 0.28);
 }
 
 /* ==============================
-   AGENT GLOW EFFECT
+   GLOW HELPERS
 ============================== */
 
-.glow-agent {
-  box-shadow: 0 0 20px rgba(34, 211, 238, 0.25);
-}
+.glow-primary { box-shadow: var(--glow-primary); }
+.glow-agent   { box-shadow: var(--glow-agent); }
+.glow-success { box-shadow: var(--glow-success); }
 
 /* ==============================
-   HERO (Landing Only)
+   HERO GRADIENT  (applied globally via layout)
+   Placed at z-[-1] so it shows through all pages.
 ============================== */
 
 .hero-gradient {
-  background: radial-gradient(circle at 50% -20%,
-      #FF5722 0%,
-      rgba(255, 87, 34, 0.2) 30%,
-      transparent 70%);
+  background: radial-gradient(
+    circle at 50% -20%,
+    rgba(var(--primary-rgb), 0.55) 0%,
+    rgba(var(--primary-rgb), 0.18) 35%,
+    rgba(var(--primary-rgb), 0.04) 60%,
+    transparent 75%
+  );
+  pointer-events: none;
+}
+
+/* ==============================
+   DECORATIVE GRID OVERLAY
+============================== */
+
+.grid-bg {
+  background-image:
+    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+
+/* ==============================
+   ANIMATED DECOR LINES
+============================== */
+
+.decor-lines {
   position: fixed;
   inset: 0;
   z-index: -1;
   pointer-events: none;
+  overflow: hidden;
+}
+
+.decor-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(var(--primary-rgb), 0.08) 30%,
+    rgba(var(--primary-rgb), 0.14) 50%,
+    rgba(var(--primary-rgb), 0.08) 70%,
+    transparent 100%
+  );
+  animation: scanline 8s linear infinite;
+  opacity: 0;
+}
+
+.decor-line:nth-child(1) { top: 20%; animation-delay: 0s;   animation-duration: 9s; }
+.decor-line:nth-child(2) { top: 45%; animation-delay: 2.5s; animation-duration: 7s; }
+.decor-line:nth-child(3) { top: 65%; animation-delay: 5s;   animation-duration: 11s; }
+.decor-line:nth-child(4) { top: 83%; animation-delay: 1s;   animation-duration: 8s; }
+
+.decor-line-vertical {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(var(--primary-rgb), 0.07) 30%,
+    rgba(var(--primary-rgb), 0.12) 50%,
+    rgba(var(--primary-rgb), 0.07) 70%,
+    transparent 100%
+  );
+  animation: scanline-v 12s linear infinite;
+  opacity: 0;
+}
+
+.decor-line-vertical:nth-child(5) { left: 15%;  animation-delay: 0s;   animation-duration: 10s; }
+.decor-line-vertical:nth-child(6) { left: 38%;  animation-delay: 3s;   animation-duration: 14s; }
+.decor-line-vertical:nth-child(7) { left: 62%;  animation-delay: 6s;   animation-duration: 9s; }
+.decor-line-vertical:nth-child(8) { left: 85%;  animation-delay: 1.5s; animation-duration: 12s; }
+
+@keyframes scanline {
+  0%   { opacity: 0; transform: translateY(-20px); }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { opacity: 0; transform: translateY(20px); }
+}
+
+@keyframes scanline-v {
+  0%   { opacity: 0; transform: translateX(-20px); }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { opacity: 0; transform: translateX(20px); }
 }
 
 /* ==============================
@@ -171,7 +298,4 @@ body {
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
-
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
+.no-scrollbar::-webkit-scrollbar { display: none; }
