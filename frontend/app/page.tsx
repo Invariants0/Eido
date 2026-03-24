@@ -3,6 +3,7 @@ import { CTASection } from '@/components/landing/CTASection';
 import { HeroSection } from '@/components/landing/HeroSection';
 import { LandingHeader } from '@/components/landing/LandingHeader';
 import { ModeToggle } from '@/components/landing/ModeToggle';
+import { NarrativeSections } from '@/components/landing/NarrativeSections';
 import { WaitlistSection } from '@/components/landing/WaitlistSection';
 import { FloatingLines } from '@/components/reactbits/FloatingLines';
 
@@ -21,6 +22,7 @@ export default function LandingPage() {
           <ModeToggle />
         </div>
 
+        <NarrativeSections />
         <WaitlistSection />
 
         <div className="w-full h-px bg-gradient-to-r from-transparent via-zinc-800 to-transparent my-12" />
