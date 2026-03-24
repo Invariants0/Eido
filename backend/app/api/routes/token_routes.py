@@ -1,7 +1,3 @@
-from fastapi import APIRouter
+"""Token routes - delegates to controller."""
 
-router = APIRouter()
-
-@router.get("/{mvp_id}", tags=["token"])
-def get_token(mvp_id: int):
-    return {"token": None}
+from ..controllers.token_controller import router
