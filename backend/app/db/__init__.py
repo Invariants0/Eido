@@ -1,25 +1,26 @@
 """Database initialization and session management."""
 
-from sqlmodel import SQLModel, create_engine, Session
 from contextlib import contextmanager
 from typing import Generator
+
+from sqlmodel import SQLModel, Session, create_engine
+
 from ..config.settings import config
 from ..logger import get_logger
 
 logger = get_logger(__name__)
 
-# Create engine with connection pooling
 engine = create_engine(
     config.DATABASE_URL,
-    echo=False,  # We manage logging via app.logging, not engine echo
+    echo=False,
     connect_args={"check_same_thread": False} if "sqlite" in config.DATABASE_URL else {},
 )
 
 
 def init_db() -> None:
     """Initialize database tables."""
-    from ..models import mvp, agent_run, token
-    
+    from ..models import agent_run, billing, mvp, token, user, waitlist
+
     logger.info("Initializing database tables")
     SQLModel.metadata.create_all(engine)
     logger.success("Database tables initialized successfully")

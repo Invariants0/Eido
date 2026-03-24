@@ -28,6 +28,7 @@ from ..monitoring.metrics import (
 )
 from ..monitoring.alerting import alert_cost_threshold_exceeded
 from ..integrations.eido_webhook import EidoWebhookClient
+from .sse_service import sse_manager
 
 
 logger = get_logger(__name__)
@@ -72,11 +73,16 @@ class AutonomousPipeline:
         """Log with correlation ID."""
         log_method = getattr(logger, level)
         log_method(message, extra={"request_id": self.correlation_id, "mvp_id": self.mvp_id, **kwargs})
+
+    async def _emit_event(self, event_type: str, payload: dict) -> None:
+        """Broadcast stage/pipeline events to SSE subscribers."""
+        await sse_manager.broadcast(self.mvp_id, event_type, payload)
     
     async def run(self) -> None:
         """Execute the autonomous pipeline with AI Runtime."""
         self._log("Starting autonomous pipeline execution with AI Runtime")
         self.pipeline_start_time = datetime.utcnow()
+        await self._emit_event("pipeline_started", {"mvp_id": self.mvp_id, "status": "started"})
         
         # Track active pipeline
         mvp_pipeline_active.inc()
@@ -120,6 +126,7 @@ class AutonomousPipeline:
                     toon_compressions=toon_stats.get("total_compressions", 0),
                     avg_savings_pct=toon_stats.get("average_savings_pct", 0.0)
                 )
+                await self._emit_event("pipeline_completed", {"mvp_id": self.mvp_id, "status": "completed"})
         
         except (CostLimitExceededError, RuntimeLimitExceededError) as e:
             self._log(f"Pipeline aborted: {str(e)}", level="error")
@@ -134,6 +141,7 @@ class AutonomousPipeline:
                 mvp = session.get(MVP, self.mvp_id)
                 if mvp:
                     mvp.last_error_stage = "cost_or_runtime_limit"
+                    mvp.last_error_message = str(e)
                     self._transition_state(session, mvp, MVPState.FAILED)
                     
                     # Track failure metrics
@@ -142,6 +150,10 @@ class AutonomousPipeline:
                     mvp_pipeline_failure_total.labels(
                         reason="limit_exceeded"
                     ).inc()
+            await self._emit_event(
+                "pipeline_failed",
+                {"mvp_id": self.mvp_id, "error_stage": "cost_or_runtime_limit", "error": str(e)},
+            )
             raise
         
         except Exception as e:
@@ -150,6 +162,7 @@ class AutonomousPipeline:
             with get_session_context() as session:
                 mvp = session.get(MVP, self.mvp_id)
                 if mvp and not is_terminal_state(mvp.status):
+                    mvp.last_error_message = str(e)
                     mvp.retry_count += 1
                     
                     if mvp.retry_count >= config.MAX_AGENT_RETRIES:
@@ -166,6 +179,10 @@ class AutonomousPipeline:
                         self._log(f"Retry count: {mvp.retry_count}/{config.MAX_AGENT_RETRIES}")
                         session.add(mvp)
                         session.commit()
+            await self._emit_event(
+                "pipeline_failed",
+                {"mvp_id": self.mvp_id, "error_stage": "pipeline", "error": str(e)},
+            )
             raise
         finally:
             # Decrement active pipeline counter
@@ -195,6 +212,7 @@ class AutonomousPipeline:
     ) -> None:
         """Execute a pipeline stage with AI Runtime tracking."""
         self._log(f"Starting stage: {stage_name}")
+        await self._emit_event("stage_started", {"stage": stage_name, "status": "running"})
         
         # Check runtime limit
         self._check_runtime_limit()
@@ -262,6 +280,7 @@ class AutonomousPipeline:
                 agent_run.status = "failed"
                 agent_run.log = stage_result.error
                 mvp.last_error_stage = stage_name
+                mvp.last_error_message = stage_result.error
                 session.add(mvp)
             
             agent_run.completed_at = completed_at
@@ -284,6 +303,16 @@ class AutonomousPipeline:
                     "SUCCESS", 
                     f"Duration: {duration_ms}ms, Tokens: {stage_result.token_usage}, Cost: ${stage_result.cost_estimate}"
                 ))
+                await self._emit_event(
+                    "stage_completed",
+                    {
+                        "stage": stage_name,
+                        "status": "completed",
+                        "duration_ms": duration_ms,
+                        "tokens": stage_result.token_usage,
+                        "cost": stage_result.cost_estimate,
+                    },
+                )
             else:
                 raise Exception(stage_result.error)
         
@@ -305,6 +334,7 @@ class AutonomousPipeline:
                 agent_run.duration_ms = duration_ms
                 agent_run.log = f"Stage {stage_name} failed: {str(e)}"
                 mvp.last_error_stage = stage_name
+                mvp.last_error_message = str(e)
                 session.add(agent_run)
                 session.add(mvp)
                 session.commit()
@@ -314,6 +344,16 @@ class AutonomousPipeline:
             # Transition to failure state if provided
             if failure_state:
                 self._transition_state(session, mvp, failure_state)
+
+            await self._emit_event(
+                "stage_failed",
+                {
+                    "stage": stage_name,
+                    "status": "failed",
+                    "error": str(e),
+                    "next_state": failure_state.value if failure_state else None,
+                },
+            )
             
             raise
     

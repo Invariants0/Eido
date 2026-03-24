@@ -7,6 +7,9 @@ import { DashboardAPI } from './api/dashboard.api';
 import { AgentAPI } from './api/agent.api';
 import { TokenAPI } from './api/token.api';
 import { SystemAPI } from './api/system.api';
+import { BillingAPI } from './api/billing.api';
+import { WaitlistAPI } from './api/waitlist.api';
+import { AuthAPI } from './api/auth.api';
 
 // --- MVP API Wrappers ---
 export const startMVP = MvpAPI.start;
@@ -46,3 +49,6 @@ export const getTokenOwnership = TokenAPI.getOwnership;
 export const getTokenUtilities = TokenAPI.getUtilities;
 export const getPortfolio = TokenAPI.getPortfolio;
 export const getTokenList = TokenAPI.getList;
+
+// --- New APIs ---
+export { BillingAPI, WaitlistAPI, AuthAPI };

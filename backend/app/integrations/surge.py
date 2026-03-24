@@ -35,6 +35,14 @@ class SurgeTokenManager:
         self._wallet_id: Optional[str] = None
         self._wallet_address: Optional[str] = None
 
+    def auth_status(self) -> Dict[str, Any]:
+        """Return non-sensitive auth status for diagnostics."""
+        return {
+            "configured": bool(self.api_key),
+            "mode": "live" if self.api_key else "mock",
+            "base_url": self.BASE_URL,
+        }
+
     async def create_token(
         self,
         mvp_id: int,

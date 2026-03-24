@@ -1,19 +1,22 @@
 """MVP request handlers (controllers) - zero business logic."""
 
-from fastapi import APIRouter, Depends, BackgroundTasks, status
-from sqlmodel import Session
-from datetime import datetime
-import json
 import asyncio
-from typing import List
+import json
+from datetime import datetime
+
+from fastapi import APIRouter, BackgroundTasks, Depends, status
+from fastapi.responses import StreamingResponse
+from sqlmodel import Session
 
 from ...db import get_session
-from ..services.mvp_service import MVPService
-from ..schemas.mvp import MVPCreate, MVPResponse, MVPListResponse
-from ...services.pipeline import AutonomousPipeline
 from ...logger import get_logger
+from ...models.user import User
 from ...monitoring.metrics import mvp_created_total
-from ...db.mock_data import MOCK_MVPS
+from ...services.pipeline import AutonomousPipeline
+from ..dependencies.auth import get_current_user
+from ..schemas.mvp import MVPCreate, MVPListResponse, MVPResponse
+from ..services.billing_service import BillingService
+from ..services.mvp_service import MVPService
 
 logger = get_logger(__name__)
 router = APIRouter()
@@ -24,27 +27,20 @@ async def start_mvp_pipeline(
     mvp_data: MVPCreate,
     background_tasks: BackgroundTasks,
     session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
 ):
-    """
-    Start autonomous MVP pipeline.
-    
-    Creates MVP record and schedules background execution.
-    Returns immediately with 202 Accepted.
-    """
     service = MVPService(session)
-    
-    # Create MVP in CREATED state
-    mvp = service.create_mvp(name=mvp_data.name, idea_summary=mvp_data.idea_summary)
-    
-    # Track MVP creation metric
+    billing_service = BillingService(session)
+
+    billing_service.authorize_run(user, mvp_data.payment_token)
+
+    mvp = service.create_mvp(name=mvp_data.name, idea_summary=mvp_data.idea_summary, user_id=user.id)
     mvp_created_total.inc()
-    
-    # Schedule pipeline execution in background
+
     pipeline = AutonomousPipeline(mvp.id)
     background_tasks.add_task(pipeline.run)
-    
-    logger.info(f"Scheduled pipeline execution for MVP {mvp.id}")
-    
+
+    logger.info(f"Scheduled pipeline execution for MVP {mvp.id} (user {user.id})")
     return mvp
 
 
@@ -53,17 +49,16 @@ def list_mvps(
     skip: int = 0,
     limit: int = 100,
     session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
 ):
-    """List all MVPs with pagination."""
     service = MVPService(session)
-    mvps = service.list_mvps(skip=skip, limit=limit)
-    total = service.count_mvps()
-    
-    # Fallback to mock data if DB is empty
+    mvps = service.list_mvps(skip=skip, limit=limit, user_id=user.id)
+    total = service.count_mvps(user_id=user.id)
+
     if total == 0:
-        logger.info("Database empty, returning mock data for MVP list")
-        return MVPListResponse(items=MOCK_MVPS, total=len(MOCK_MVPS))
-    
+        logger.info("User has no MVPs yet, returning empty list")
+        return MVPListResponse(items=[], total=0)
+
     return MVPListResponse(items=mvps, total=total)
 
 
@@ -71,53 +66,50 @@ def list_mvps(
 def get_mvp(
     mvp_id: int,
     session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
 ):
-    """Get MVP by ID."""
     service = MVPService(session)
-    mvp = service.get_mvp(mvp_id)
-    return mvp
+    return service.get_mvp(mvp_id, user_id=user.id)
 
 
 @router.get("/{mvp_id}/runs")
 def get_mvp_runs(
     mvp_id: int,
     session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
 ):
-    """Get all agent runs for an MVP."""
     service = MVPService(session)
-    runs = service.get_agent_runs(mvp_id)
+    runs = service.get_agent_runs(mvp_id, user_id=user.id)
     return {"mvp_id": mvp_id, "runs": runs}
 
 
 @router.get("/{mvp_id}/events")
-async def stream_mvp_events(mvp_id: int):
-    """
-    Stream real-time log events for a specific MVP using SSE.
-    Used by the dashboard for live agent feedback.
-    """
-    from fastapi.responses import StreamingResponse
+async def stream_mvp_events(
+    mvp_id: int,
+    session: Session = Depends(get_session),
+    user: User = Depends(get_current_user),
+):
+    service = MVPService(session)
+    service.get_mvp(mvp_id, user_id=user.id)
+
     from ...services.sse_service import sse_manager
-    
+
     async def sse_event_generator():
-        # Subscribe to this MVP's logs
         queue = await sse_manager.subscribe(mvp_id)
         try:
-            # Send initial connection event in a format the client expects
             connect_data = {
                 "timestamp": datetime.utcnow().isoformat(),
                 "type": "connect",
-                "data": {"status": "connected", "mvp_id": mvp_id}
+                "data": {"status": "connected", "mvp_id": mvp_id},
             }
             yield f"event: connect\ndata: {json.dumps(connect_data)}\n\n"
-            
+
             while True:
-                # Wait for next event from the queue
                 message = await queue.get()
                 yield message
         except asyncio.CancelledError:
-            # Client disconnected
             sse_manager.unsubscribe(mvp_id, queue)
-            
+
     return StreamingResponse(
         sse_event_generator(),
         media_type="text/event-stream",
@@ -125,5 +117,5 @@ async def stream_mvp_events(mvp_id: int):
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
             "Content-Type": "text/event-stream",
-        }
+        },
     )

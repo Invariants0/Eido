@@ -1,15 +1,16 @@
-import { HeroSection } from '@/components/landing/HeroSection';
-import { ModeToggle } from '@/components/landing/ModeToggle';
 import { CommandBlock } from '@/components/landing/CommandBlock';
 import { CTASection } from '@/components/landing/CTASection';
-import { FloatingLines } from '@/components/reactbits/FloatingLines';
+import { HeroSection } from '@/components/landing/HeroSection';
 import { LandingHeader } from '@/components/landing/LandingHeader';
+import { ModeToggle } from '@/components/landing/ModeToggle';
+import { NarrativeSections } from '@/components/landing/NarrativeSections';
+import { WaitlistSection } from '@/components/landing/WaitlistSection';
+import { FloatingLines } from '@/components/reactbits/FloatingLines';
 
 export default function LandingPage() {
   return (
     <div className="relative flex flex-col bg-transparent text-white selection:bg-primary/30 no-scrollbar overflow-y-auto">
       <FloatingLines />
-
       <LandingHeader />
 
       <main className="flex-1 w-full overflow-x-hidden pt-8">
@@ -20,6 +21,9 @@ export default function LandingPage() {
         <div id="features" className="scroll-mt-24">
           <ModeToggle />
         </div>
+
+        <NarrativeSections />
+        <WaitlistSection />
 
         <div className="w-full h-px bg-gradient-to-r from-transparent via-zinc-800 to-transparent my-12" />
 
@@ -36,9 +40,7 @@ export default function LandingPage() {
             <span className="w-2 h-2 rounded-full bg-zinc-700" />
             <span className="text-zinc-500 font-mono text-xs">SYSTEM STATUS: OPERATIONAL</span>
           </div>
-          <div className="text-zinc-600 text-sm">
-            &copy; 2026 Eido Systems. Built on OpenClaw.
-          </div>
+          <div className="text-zinc-600 text-sm">&copy; 2026 Eido Systems. Built on OpenClaw.</div>
         </div>
       </footer>
     </div>
